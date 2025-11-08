@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ServiceCategory {
+  id          Int       @id @default(autoincrement())
+  name        String    // "Manikura", "Pedikura"
+  type        String    // "prirodni" ili "umjetni"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  services    Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id          Int             @id @default(autoincrement())
+  name        String          // "Francuski Manikir", "Gel Lak", itd.
+  description String?
+  price       Float
+  duration    Int             // trajanje u minutama (60, 90, 120)
+  image       String?
+  categoryId  Int
+
+  category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("services")
+}
+
+model Appointment {
+  id          Int       @id @default(autoincrement())
+  serviceId   Int
+  size        String    // "S", "M", "L" ili prazno
+  design      String?
+  date        DateTime  // promijenjeno iz String u DateTime
+  time        String    // "14:00", "15:30", itd.
+  customerName String
+  customerPhone String
+  customerEmail String
+  status      String    @default("pending") // pending, approved, rejected, completed
+  notes       String?
+
+  service     Service   @relation(fields: [serviceId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("appointments")
+}
