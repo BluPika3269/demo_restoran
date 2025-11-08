@@ -1,3 +1,0 @@
-module.exports=[93695,(a,b,c)=>{b.exports=a.x("next/dist/shared/lib/no-fallback-error.external.js",()=>require("next/dist/shared/lib/no-fallback-error.external.js"))},14160,a=>{a.n(a.i(28873))},2404,a=>{a.n(a.i(18858))},98135,a=>{a.n(a.i(64589))},79787,a=>{a.n(a.i(4028))},56457,a=>{a.n(a.i(29772))},47608,a=>{"use strict";var b=a.i(39100);function c(){return(0,b.jsx)("div",{children:(0,b.jsx)("h1",{children:"Calendar Demo"})})}a.s(["default",()=>c])}];
-
-//# sourceMappingURL=%5Broot-of-the-server%5D__889cc663._.js.map

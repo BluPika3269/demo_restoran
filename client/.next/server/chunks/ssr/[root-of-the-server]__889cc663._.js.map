@@ -1,1 +1,0 @@
-{"version":3,"sources":["turbopack:///[project]/client/src/app/admin/calendar-demo/page.tsx"],"sourcesContent":["export default function CalendarDemoPage() {\r\n  return (\r\n    <div>\r\n      <h1>Calendar Demo</h1>\r\n    </div>\r\n  );\r\n}\r\n"],"names":[],"mappings":"oVAAe,SAAS,IACtB,MACE,CAAA,EAAA,EAAA,GAAA,EAAC,MAAA,UACC,CAAA,EAAA,EAAA,GAAA,EAAC,KAAA,UAAG,mBAGV"}

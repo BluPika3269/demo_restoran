@@ -19,9 +19,14 @@ server/node_modules/
 # next.js
 /.next/
 /out/
+client/.next/
+server/.next/
 
 # production
 /build
+server/prisma/node_modules/
+server/prisma/dev.db
+server/backend/generated/
 
 # misc
 .DS_Store
