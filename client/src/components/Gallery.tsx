@@ -21,6 +21,17 @@ interface Service {
   };
 }
 
+// Funkcija za dobijanje default slike
+const getDefaultImage = (index: number) => {
+  const images = [
+    '/images/Baby Boomer Nokti.png',
+    '/images/crveni nokti.png',
+    '/images/matte.png',
+    '/images/Nude Nokti s Detaljima.png'
+  ];
+  return images[index % images.length];
+};
+
 export default function Gallery() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,11 +95,12 @@ export default function Gallery() {
               >
                 <div className="relative h-64 bg-gray-200">
                   <Image
-                    src={service.image || 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop'}
+                    src={service.image || getDefaultImage(index)}
                     alt={service.name}
                     fill
                     className="object-cover rounded-t-2xl"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    unoptimized={!service.image}
                   />
                 </div>
                 <div className="p-6">
@@ -137,11 +149,12 @@ export default function Gallery() {
                 <X className="w-6 h-6" />
               </button>
               <Image
-                src={selectedCake.image?.replace('w=400&h=300', 'w=800&h=600') || 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop'}
+                src={selectedCake.image || getDefaultImage(services.indexOf(selectedCake))}
                 alt={selectedCake.name}
                 width={800}
                 height={600}
                 className="w-full h-64 md:h-96 object-cover"
+                unoptimized={!selectedCake.image}
               />
             </div>
             <div className="p-8">

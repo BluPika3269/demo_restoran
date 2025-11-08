@@ -21,109 +21,78 @@ export default function Contact() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Contact Info */}
-          <motion.div
-            className="space-y-8"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shrink-0">
-                <MapPin className="w-6 h-6 text-white" />
-              </div>
-              <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Adresa</h3>
-              <p className="text-gray-600 dark:text-gray-300">Ulica Ljepote 123<br />10000 Zagreb, Hrvatska</p>
-              </div>
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Adresa */}
+          <div className="flex flex-col items-center text-center group">
+            <div className="w-16 h-16 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <MapPin className="w-8 h-8 text-white" />
             </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Adresa</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+              Ilica 242, Zagreb, Hrvatska
+            </p>
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Ilica+242,+10000+Zagreb,+Hrvatska"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium hover:shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              Kreni
+            </a>
+          </div>
 
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shrink-0">
-                <Phone className="w-6 h-6 text-white" />
-              </div>
-              <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Telefon</h3>
-              <p className="text-gray-600 dark:text-gray-300">+385 1 987 6543</p>
-              </div>
+          {/* Telefon */}
+          <div className="flex flex-col items-center text-center group">
+            <div className="w-16 h-16 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <Phone className="w-8 h-8 text-white" />
             </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Telefon</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+              +385 1 987 6543
+            </p>
+            <a
+              href="tel:+38519876543"
+              className="px-4 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium hover:shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              Zovi
+            </a>
+          </div>
 
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shrink-0">
-                <Mail className="w-6 h-6 text-white" />
-              </div>
-              <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Email</h3>
-              <p className="text-gray-600 dark:text-gray-300">info@salon-za-nokte.hr</p>
-              </div>
+          {/* Email */}
+          <div className="flex flex-col items-center text-center group">
+            <div className="w-16 h-16 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <Mail className="w-8 h-8 text-white" />
             </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Email</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+              info@salon-za-nokte.hr
+            </p>
+            <a
+              href="mailto:info@salon-za-nokte.hr"
+              className="px-4 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium hover:shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              Pošalji
+            </a>
+          </div>
 
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shrink-0">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Radno Vrijeme</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Pon - Pet: 9:00 - 19:00<br />
-                  Sub: 9:00 - 16:00<br />
-                  Ned: Zatvoreno
-                </p>
-              </div>
+          {/* Radno Vrijeme */}
+          <div className="flex flex-col items-center text-center group">
+            <div className="w-16 h-16 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <Clock className="w-8 h-8 text-white" />
             </div>
-          </motion.div>
-
-          {/* Contact Form */}
-          <motion.div
-            className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Pošaljite Poruku</h3>
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Ime
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-300"
-                    placeholder="Vaše ime"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-300"
-                    placeholder="vas@email.com"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Poruka
-                </label>
-                <textarea
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-300"
-                  placeholder="Vaša poruka..."
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-linear-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-              >
-                Pošalji Poruku
-              </button>
-            </form>
-          </motion.div>
-        </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Radno Vrijeme</h3>
+            <p className="text-gray-600 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+              Pon - Pet: 9:00 - 19:00<br />
+              Sub: 9:00 - 16:00<br />
+              Ned: Zatvoreno
+            </p>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

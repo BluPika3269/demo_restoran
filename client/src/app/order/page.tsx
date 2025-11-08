@@ -7,7 +7,7 @@ import 'react-calendar/dist/Calendar.css';
 import { format, isToday } from 'date-fns';
 import Navigation from '@/components/Navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = '/api';
 
 // Croatian public holidays
 const getCroatianHolidays = (year: number) => {

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// GET /api/admin/appointments - Fetch all appointments
 export async function GET(request: NextRequest) {
   try {
     const appointments = await prisma.appointment.findMany({
@@ -13,34 +14,31 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { date: 'desc' }
+      orderBy: {
+        date: 'desc'
+      }
     });
+    
     return NextResponse.json(appointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);
-    return NextResponse.json({ error: 'Failed to fetch appointments' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch appointments' },
+      { status: 500 }
+    );
   }
 }
 
+// POST /api/admin/appointments - Create new appointment (if needed)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      serviceId,
-      size,
-      design,
-      date,
-      time,
-      customerName,
-      customerPhone,
-      customerEmail,
-      notes
-    } = body;
+    const { serviceId, date, time, size, design, customerName, customerEmail, customerPhone, notes } = body;
 
     // Validate required fields
     if (!serviceId || !date || !time || !customerName || !customerEmail || !customerPhone) {
       return NextResponse.json(
-        { error: 'Nedostaju obavezna polja' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
@@ -75,6 +73,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(appointment, { status: 201 });
   } catch (error) {
     console.error('Error creating appointment:', error);
-    return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create appointment' },
+      { status: 500 }
+    );
   }
 }
