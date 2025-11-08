@@ -1,0 +1,471 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Seeding database...');
+
+  // ===== KATEGORIJE =====
+  // 1. Dopuna noktiju
+  const dopunaNoktiju = await prisma.serviceCategory.create({
+    data: {
+      name: 'Dopuna noktiju',
+      type: 'umjetni'
+    }
+  });
+
+  // 2. Gellak
+  const gellak = await prisma.serviceCategory.create({
+    data: {
+      name: 'Gellak',
+      type: 'prirodni'
+    }
+  });
+
+  // 3. Ugradnja noktiju
+  const ugradnjaNoktiju = await prisma.serviceCategory.create({
+    data: {
+      name: 'Ugradnja noktiju',
+      type: 'umjetni'
+    }
+  });
+
+  // 4. Geliranje prirodne dužine
+  const geliranjePrirodne = await prisma.serviceCategory.create({
+    data: {
+      name: 'Geliranje prirodne dužine',
+      type: 'prirodni'
+    }
+  });
+
+  // 5. Njega noktiju
+  const njegaNoktiju = await prisma.serviceCategory.create({
+    data: {
+      name: 'Njega noktiju',
+      type: 'prirodni'
+    }
+  });
+
+  // 6. Depilacija (NOVO!)
+  const depilacija = await prisma.serviceCategory.create({
+    data: {
+      name: 'Depilacija',
+      type: 'prirodni'
+    }
+  });
+
+  // 7. Njega nogu (NOVO!)
+  const njegaNogu = await prisma.serviceCategory.create({
+    data: {
+      name: 'Njega nogu',
+      type: 'prirodni'
+    }
+  });
+
+  // 8. Šminkanje (NOVO!)
+  const sminkanje = await prisma.serviceCategory.create({
+    data: {
+      name: 'Šminkanje',
+      type: 'prirodni'
+    }
+  });
+
+  // 9. Keratinski tretmani (NOVO!)
+  const keratinskiTretmani = await prisma.serviceCategory.create({
+    data: {
+      name: 'Keratinski tretmani',
+      type: 'prirodni'
+    }
+  });
+
+  // 10. Mikropigmentacija (NOVO!)
+  const mikropigmentacija = await prisma.serviceCategory.create({
+    data: {
+      name: 'Mikropigmentacija',
+      type: 'prirodni'
+    }
+  });
+
+  // 11. Tretmani lica (NOVO!)
+  const tretmaniLica = await prisma.serviceCategory.create({
+    data: {
+      name: 'Tretmani lica',
+      type: 'prirodni'
+    }
+  });
+
+  // 12. Ostali tretmani (NOVO!)
+  const ostaliTretmani = await prisma.serviceCategory.create({
+    data: {
+      name: 'Ostali tretmani',
+      type: 'prirodni'
+    }
+  });
+
+  // Dopuna noktiju - 8 usluga
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Dopuna noktiju - kratki',
+        description: 'Dopuna umjetnih noktiju kratke dužine',
+        price: 25.00,
+        duration: 60,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Dopuna noktiju - srednji',
+        description: 'Dopuna umjetnih noktiju srednje dužine',
+        price: 30.00,
+        duration: 75,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Dopuna noktiju - dugi',
+        description: 'Dopuna umjetnih noktiju duge dužine',
+        price: 35.00,
+        duration: 90,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Dopuna sa dizajnom',
+        description: 'Dopuna noktiju sa jednostavnim dizajnom',
+        price: 40.00,
+        duration: 105,
+        image: 'https://images.unsplash.com/photo-1610992015765-13a8a1090180?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Francuska dopuna',
+        description: 'Dopuna noktiju u francuskom stilu',
+        price: 35.00,
+        duration: 90,
+        image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Dopuna sa šljokicama',
+        description: 'Dopuna noktiju sa šljokicama',
+        price: 45.00,
+        duration: 120,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Korekcija noktiju',
+        description: 'Korekcija i dopuna oštećenih noktiju',
+        price: 50.00,
+        duration: 135,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      },
+      {
+        name: 'Luxury dopuna',
+        description: 'Premium dopuna sa posebnim dizajnom',
+        price: 60.00,
+        duration: 150,
+        image: 'https://images.unsplash.com/photo-1610992015765-13a8a1090180?w=200&h=150&fit=crop&crop=center',
+        categoryId: dopunaNoktiju.id
+      }
+    ]
+  });
+
+  // Gellak - 6 usluga
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Klasični gellak',
+        description: 'Jednobojni gellak na prirodne nokte',
+        price: 15.00,
+        duration: 45,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: gellak.id
+      },
+      {
+        name: 'Francuski gellak',
+        description: 'Francuski stil sa gellakom',
+        price: 18.00,
+        duration: 50,
+        image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=200&h=150&fit=crop&crop=center',
+        categoryId: gellak.id
+      },
+      {
+        name: 'Gellak sa dizajnom',
+        description: 'Gellak sa jednostavnim dizajnom',
+        price: 22.00,
+        duration: 60,
+        image: 'https://images.unsplash.com/photo-1610992015765-13a8a1090180?w=200&h=150&fit=crop&crop=center',
+        categoryId: gellak.id
+      },
+      {
+        name: 'Gellak ombre',
+        description: 'Ombre efekt sa gellakom',
+        price: 25.00,
+        duration: 70,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: gellak.id
+      },
+      {
+        name: 'Gellak sa šljokicama',
+        description: 'Gellak ukrašen šljokicama',
+        price: 28.00,
+        duration: 75,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: gellak.id
+      },
+      {
+        name: 'Luxury gellak',
+        description: 'Premium gellak sa posebnim efektima',
+        price: 35.00,
+        duration: 90,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: gellak.id
+      }
+    ]
+  });
+
+  // Ugradnja noktiju - 9 usluga
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Ugradnja - kratki nokti',
+        description: 'Ugradnja kratkih umjetnih noktiju',
+        price: 35.00,
+        duration: 90,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Ugradnja - srednji nokti',
+        description: 'Ugradnja noktiju srednje dužine',
+        price: 40.00,
+        duration: 105,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Ugradnja - dugi nokti',
+        description: 'Ugradnja dugih umjetnih noktiju',
+        price: 45.00,
+        duration: 120,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Francuska ugradnja',
+        description: 'Ugradnja noktiju u francuskom stilu',
+        price: 50.00,
+        duration: 135,
+        image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Ugradnja sa dizajnom',
+        description: 'Ugradnja sa ugrađenim dizajnom',
+        price: 55.00,
+        duration: 150,
+        image: 'https://images.unsplash.com/photo-1610992015765-13a8a1090180?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Luxury ugradnja',
+        description: 'Premium ugradnja sa posebnim dizajnom',
+        price: 70.00,
+        duration: 180,
+        image: 'https://images.unsplash.com/photo-1610992015765-13a8a1090180?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Ugradnja sa gel',
+        description: 'Ugradnja noktiju sa gel premazom',
+        price: 60.00,
+        duration: 165,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Ugradnja baby boomer',
+        description: 'Baby boomer stil ugradnja',
+        price: 65.00,
+        duration: 175,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      },
+      {
+        name: 'Ugradnja ballerina',
+        description: 'Ballerina stil ugradnja',
+        price: 55.00,
+        duration: 155,
+        image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&crop=center',
+        categoryId: ugradnjaNoktiju.id
+      }
+    ]
+  });
+
+  // Geliranje prirodne dužine - 6 usluga
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Geliranje prirodnih noktiju',
+        description: 'Geliranje noktiju prirodne dužine',
+        price: 20.00,
+        duration: 60,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: geliranjePrirodne.id
+      },
+      {
+        name: 'Geliranje sa bojom',
+        description: 'Geliranje sa gel lak bojom',
+        price: 25.00,
+        duration: 75,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: geliranjePrirodne.id
+      },
+      {
+        name: 'Francusko geliranje',
+        description: 'Geliranje u francuskom stilu',
+        price: 28.00,
+        duration: 80,
+        image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=200&h=150&fit=crop&crop=center',
+        categoryId: geliranjePrirodne.id
+      },
+      {
+        name: 'Geliranje sa dizajnom',
+        description: 'Geliranje sa jednostavnim dizajnom',
+        price: 32.00,
+        duration: 95,
+        image: 'https://images.unsplash.com/photo-1610992015765-13a8a1090180?w=200&h=150&fit=crop&crop=center',
+        categoryId: geliranjePrirodne.id
+      },
+      {
+        name: 'Geliranje ombre',
+        description: 'Ombre efekt geliranje',
+        price: 35.00,
+        duration: 105,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: geliranjePrirodne.id
+      },
+      {
+        name: 'Luxury geliranje',
+        description: 'Premium geliranje sa posebnim efektima',
+        price: 40.00,
+        duration: 120,
+        image: 'https://images.unsplash.com/photo-1610992015732-2449b0c26670?w=200&h=150&fit=crop&crop=center',
+        categoryId: geliranjePrirodne.id
+      }
+    ]
+  });
+
+  // Njega noktiju - 5 usluga
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Masaža ruku',
+        description: 'Relaksirajuća masaža ruku',
+        price: 10.00,
+        duration: 20,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: njegaNoktiju.id
+      },
+      {
+        name: 'Manikura',
+        description: 'Klasična manikura',
+        price: 12.00,
+        duration: 30,
+        image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=200&h=150&fit=crop&crop=center',
+        categoryId: njegaNoktiju.id
+      },
+      {
+        name: 'Spa manikura',
+        description: 'Spa manikura sa hidratacijom',
+        price: 18.00,
+        duration: 45,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: njegaNoktiju.id
+      },
+      {
+        name: 'Japanska manikura',
+        description: 'Japanska manikura tehnika',
+        price: 25.00,
+        duration: 60,
+        image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=200&h=150&fit=crop&crop=center',
+        categoryId: njegaNoktiju.id
+      },
+      {
+        name: 'Royal spa manikura',
+        description: 'Luxury spa manikura tretman',
+        price: 35.00,
+        duration: 75,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: njegaNoktiju.id
+      }
+    ]
+  });
+
+  // Pedikura - 6 usluga
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Klasična pedikura',
+        description: 'Klasična pedikura za noge',
+        price: 20.00,
+        duration: 45,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: pedikura.id
+      },
+      {
+        name: 'Spa pedikura',
+        description: 'Spa pedikura sa hidratacijom',
+        price: 28.00,
+        duration: 60,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: pedikura.id
+      },
+      {
+        name: 'Medicinska pedikura',
+        description: 'Medicinska pedikura za problematične noge',
+        price: 35.00,
+        duration: 75,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: pedikura.id
+      },
+      {
+        name: 'Francuska pedikura',
+        description: 'Francuska pedikura',
+        price: 30.00,
+        duration: 65,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: pedikura.id
+      },
+      {
+        name: 'Gel pedikura',
+        description: 'Pedikura sa gel premazom',
+        price: 40.00,
+        duration: 90,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: pedikura.id
+      },
+      {
+        name: 'Luxury spa pedikura',
+        description: 'Premium spa pedikura tretman',
+        price: 50.00,
+        duration: 105,
+        image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&crop=center',
+        categoryId: pedikura.id
+      }
+    ]
+  });
+
+  console.log('✅ Database seeded successfully!');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Error seeding database:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

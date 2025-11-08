@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/client/middleware.ts"],"sourcesContent":["import { NextResponse } from 'next/server';\r\nimport type { NextRequest } from 'next/server';\r\n\r\nexport function middleware(request: NextRequest) {\r\n  const basicAuth = request.headers.get('authorization');\r\n  const url = request.nextUrl;\r\n\r\n  if (basicAuth) {\r\n    const authValue = basicAuth.split(' ')[1];\r\n    const [user, pwd] = atob(authValue).split(':');\r\n\r\n    if (user === 'demo1' && pwd === 'Salon') {\r\n      return NextResponse.next();\r\n    }\r\n  }\r\n\r\n  url.pathname = '/api/auth';\r\n\r\n  return NextResponse.rewrite(url);\r\n}\r\n\r\nexport const config = {\r\n  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],\r\n};\r\n"],"names":[],"mappings":";;;;;;AAAA;AAAA;;AAGO,SAAS,WAAW,OAAoB;IAC7C,MAAM,YAAY,QAAQ,OAAO,CAAC,GAAG,CAAC;IACtC,MAAM,MAAM,QAAQ,OAAO;IAE3B,IAAI,WAAW;QACb,MAAM,YAAY,UAAU,KAAK,CAAC,IAAI,CAAC,EAAE;QACzC,MAAM,CAAC,MAAM,IAAI,GAAG,KAAK,WAAW,KAAK,CAAC;QAE1C,IAAI,SAAS,WAAW,QAAQ,SAAS;YACvC,OAAO,0MAAY,CAAC,IAAI;QAC1B;IACF;IAEA,IAAI,QAAQ,GAAG;IAEf,OAAO,0MAAY,CAAC,OAAO,CAAC;AAC9B;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;KAAoD;AAChE"}}]
+}

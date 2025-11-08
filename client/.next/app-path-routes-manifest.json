@@ -1,0 +1,10 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/calendar-demo/page": "/admin/calendar-demo",
+  "/admin/dashboard/page": "/admin/dashboard",
+  "/admin/login/page": "/admin/login",
+  "/favicon.ico/route": "/favicon.ico",
+  "/order/page": "/order",
+  "/page": "/"
+}
