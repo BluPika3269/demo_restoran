@@ -44,29 +44,33 @@ export default function Gallery() {
         const response = await fetch('/api/services');
         if (response.ok) {
           const data = await response.json();
-          // Prikaži prvih 6 usluga
-          setServices(data.slice(0, 6));
+          // Prikaži prvih 6 usluga i dodaj lokalne slike ako service nema sliku
+          const servicesWithImages = data.slice(0, 6).map((service: Service, index: number) => ({
+            ...service,
+            image: service.image || getDefaultImage(index)
+          }));
+          setServices(servicesWithImages);
         } else {
-          // Fallback ako API ne radi - prikaži dummy podatke
+          // Fallback ako API ne radi - prikaži dummy podatke sa lokalnim slikama
           setServices([
-            { id: 1, name: 'Gel Lakiranje', description: 'Trajni gel lak u boji po izboru', price: 30, duration: 60, image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop', categoryId: 1, category: { id: 1, name: 'Gellak', type: 'service' } },
-            { id: 2, name: 'French Manikura', description: 'Elegantna french manikura', price: 35, duration: 90, image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=800&h=600&fit=crop', categoryId: 1, category: { id: 1, name: 'Manikir', type: 'service' } },
-            { id: 3, name: 'Ojačanje Noktiju', description: 'Ojačanje prirodnih noktiju gelom', price: 40, duration: 90, image: 'https://images.unsplash.com/photo-1599206676335-193c82b13c9e?w=800&h=600&fit=crop', categoryId: 2, category: { id: 2, name: 'Geliranje', type: 'service' } },
-            { id: 4, name: 'Baby Boomer Nokti', description: 'Popularan ombre dizajn', price: 45, duration: 120, image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=800&h=600&fit=crop', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-            { id: 5, name: 'Nail Art Dizajn', description: 'Kreativni dizajn po želji', price: 50, duration: 150, image: 'https://images.unsplash.com/photo-1606920177680-db1c7c1e4b9c?w=800&h=600&fit=crop', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-            { id: 6, name: 'Produžetak Noktiju', description: 'Produžetak gelom ili akrikom', price: 55, duration: 120, image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&h=600&fit=crop', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } }
+            { id: 1, name: 'Gel Lakiranje', description: 'Trajni gel lak u boji po izboru', price: 30, duration: 60, image: '/images/crveni nokti.png', categoryId: 1, category: { id: 1, name: 'Gellak', type: 'service' } },
+            { id: 2, name: 'French Manikura', description: 'Elegantna french manikura', price: 35, duration: 90, image: '/images/Baby Boomer Nokti.png', categoryId: 1, category: { id: 1, name: 'Manikir', type: 'service' } },
+            { id: 3, name: 'Ojačanje Noktiju', description: 'Ojačanje prirodnih noktiju gelom', price: 40, duration: 90, image: '/images/matte.png', categoryId: 2, category: { id: 2, name: 'Geliranje', type: 'service' } },
+            { id: 4, name: 'Baby Boomer Nokti', description: 'Popularan ombre dizajn', price: 45, duration: 120, image: '/images/Baby Boomer Nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
+            { id: 5, name: 'Nail Art Dizajn', description: 'Kreativni dizajn po želji', price: 50, duration: 150, image: '/images/Nude Nokti s Detaljima.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
+            { id: 6, name: 'Produžetak Noktiju', description: 'Produžetak gelom ili akrikom', price: 55, duration: 120, image: '/images/crveni nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } }
           ]);
         }
       } catch (error) {
         console.error('Error fetching services:', error);
-        // Fallback podatci
+        // Fallback podatci sa lokalnim slikama
         setServices([
-          { id: 1, name: 'Gel Lakiranje', description: 'Trajni gel lak u boji po izboru', price: 30, duration: 60, image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop', categoryId: 1, category: { id: 1, name: 'Gellak', type: 'service' } },
-          { id: 2, name: 'French Manikura', description: 'Elegantna french manikura', price: 35, duration: 90, image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=800&h=600&fit=crop', categoryId: 1, category: { id: 1, name: 'Manikir', type: 'service' } },
-          { id: 3, name: 'Ojačanje Noktiju', description: 'Ojačanje prirodnih noktiju gelom', price: 40, duration: 90, image: 'https://images.unsplash.com/photo-1599206676335-193c82b13c9e?w=800&h=600&fit=crop', categoryId: 2, category: { id: 2, name: 'Geliranje', type: 'service' } },
-          { id: 4, name: 'Baby Boomer Nokti', description: 'Popularan ombre dizajn', price: 45, duration: 120, image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=800&h=600&fit=crop', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-          { id: 5, name: 'Nail Art Dizajn', description: 'Kreativni dizajn po želji', price: 50, duration: 150, image: 'https://images.unsplash.com/photo-1606920177680-db1c7c1e4b9c?w=800&h=600&fit=crop', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-          { id: 6, name: 'Produžetak Noktiju', description: 'Produžetak gelom ili akrikom', price: 55, duration: 120, image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&h=600&fit=crop', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } }
+          { id: 1, name: 'Gel Lakiranje', description: 'Trajni gel lak u boji po izboru', price: 30, duration: 60, image: '/images/Baby Boomer Nokti.png', categoryId: 1, category: { id: 1, name: 'Gellak', type: 'service' } },
+          { id: 2, name: 'French Manikura', description: 'Elegantna french manikura', price: 35, duration: 90, image: '/images/crveni nokti.png', categoryId: 1, category: { id: 1, name: 'Manikir', type: 'service' } },
+          { id: 3, name: 'Ojačanje Noktiju', description: 'Ojačanje prirodnih noktiju gelom', price: 40, duration: 90, image: '/images/matte.png', categoryId: 2, category: { id: 2, name: 'Geliranje', type: 'service' } },
+          { id: 4, name: 'Baby Boomer Nokti', description: 'Popularan ombre dizajn', price: 45, duration: 120, image: '/images/Nude Nokti s Detaljima.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
+          { id: 5, name: 'Nail Art Dizajn', description: 'Kreativni dizajn po želji', price: 50, duration: 150, image: '/images/Baby Boomer Nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
+          { id: 6, name: 'Produžetak Noktiju', description: 'Produžetak gelom ili akrikom', price: 55, duration: 120, image: '/images/crveni nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } }
         ]);
       } finally {
         setLoading(false);
@@ -114,7 +118,7 @@ export default function Gallery() {
               >
                 <div className="relative h-64 bg-gray-200">
                   <Image
-                    src={service.image || 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop'}
+                    src={service.image || '/images/Baby Boomer Nokti.png'}
                     alt={service.name}
                     fill
                     className="object-cover rounded-t-2xl"
@@ -168,7 +172,7 @@ export default function Gallery() {
                 <X className="w-6 h-6" />
               </button>
               <Image
-                src={selectedCake.image || 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop'}
+                src={selectedCake.image || '/images/Baby Boomer Nokti.png'}
                 alt={selectedCake.name}
                 width={800}
                 height={600}
