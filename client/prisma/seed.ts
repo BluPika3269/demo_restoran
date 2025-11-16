@@ -18,51 +18,51 @@ async function main() {
   // ==================== KATEGORIJE ====================
   
   const dopunaNoktiju = await prisma.serviceCategory.create({
-    data: { name: 'Dopuna noktiju', type: 'umjetni' }
+    data: { name: 'Dopuna noktiju' }
   });
 
   const gellak = await prisma.serviceCategory.create({
-    data: { name: 'Gellak', type: 'prirodni' }
+    data: { name: 'Gellak' }
   });
 
   const ugradnjaNoktiju = await prisma.serviceCategory.create({
-    data: { name: 'Ugradnja noktiju', type: 'umjetni' }
+    data: { name: 'Ugradnja noktiju' }
   });
 
   const geliranjePrirodne = await prisma.serviceCategory.create({
-    data: { name: 'Geliranje prirodne dužine', type: 'prirodni' }
+    data: { name: 'Geliranje prirodne duljine' }
   });
 
   const njegaNoktiju = await prisma.serviceCategory.create({
-    data: { name: 'Njega noktiju', type: 'prirodni' }
+    data: { name: 'Njega noktiju' }
   });
 
   const depilacija = await prisma.serviceCategory.create({
-    data: { name: 'Depilacija', type: 'prirodni' }
+    data: { name: 'Depilacija' }
   });
 
   const njegaNogu = await prisma.serviceCategory.create({
-    data: { name: 'Njega nogu', type: 'prirodni' }
+    data: { name: 'Njega nogu' }
   });
 
   const sminkanje = await prisma.serviceCategory.create({
-    data: { name: 'Šminkanje', type: 'prirodni' }
+    data: { name: 'Šminkanje' }
   });
 
   const keratinskiTretmani = await prisma.serviceCategory.create({
-    data: { name: 'Keratinski tretmani', type: 'prirodni' }
+    data: { name: 'Keratinski tretmani' }
   });
 
   const mikropigmentacija = await prisma.serviceCategory.create({
-    data: { name: 'Mikropigmentacija', type: 'prirodni' }
+    data: { name: 'Mikropigmentacija' }
   });
 
   const tretmaniLica = await prisma.serviceCategory.create({
-    data: { name: 'Tretmani lica', type: 'prirodni' }
+    data: { name: 'Tretmani lica' }
   });
 
   const ostaliTretmani = await prisma.serviceCategory.create({
-    data: { name: 'Ostali tretmani', type: 'prirodni' }
+    data: { name: 'Ostali tretmani' }
   });
 
   console.log('✅ Created 12 categories');
@@ -77,9 +77,9 @@ async function main() {
       { name: 'French', description: '', price: 31.00, duration: 90, image: '', categoryId: dopunaNoktiju.id },
       { name: 'BabyBoomer', description: '', price: 34.00, duration: 90, image: '', categoryId: dopunaNoktiju.id },
       { name: 'Dodatno iscrtavanje, ombre, chrome', description: '', price: 7.00, duration: 30, image: '', categoryId: dopunaNoktiju.id },
-      { name: 'L dužina noktiju', description: '', price: 5.00, duration: 30, image: '', categoryId: dopunaNoktiju.id },
-      { name: 'XL dužina noktiju', description: '', price: 9.00, duration: 30, image: '', categoryId: dopunaNoktiju.id },
-      { name: 'Ne znam što ću, radi šta hoćeš', description: '', price: 35.00, duration: 120, image: '', categoryId: dopunaNoktiju.id }
+      { name: 'L duljina noktiju', description: '', price: 5.00, duration: 30, image: '', categoryId: dopunaNoktiju.id },
+      { name: 'XL duljina noktiju', description: '', price: 9.00, duration: 30, image: '', categoryId: dopunaNoktiju.id },
+      { name: 'Ne znam što ću, radi što želiš', description: '', price: 35.00, duration: 120, image: '', categoryId: dopunaNoktiju.id }
     ]
   });
 
@@ -91,34 +91,34 @@ async function main() {
       { name: 'French gellak', description: 'Trajni lak francuska manikura.', price: 31.00, duration: 60, image: '', categoryId: gellak.id },
       { name: 'BabyBoomer gellak', description: 'Trajni lak ombre tehnika bijelo i cover.', price: 34.00, duration: 60, image: '', categoryId: gellak.id },
       { name: 'Dodatno iscrtavanje, ombre, chrome', description: '', price: 7.00, duration: 30, image: '', categoryId: gellak.id },
-      { name: 'Ne znam šta ću, radi šta hoćeš', description: '', price: 40.00, duration: 120, image: '', categoryId: gellak.id }
+      { name: 'Ne znam što ću, radi što želiš', description: '', price: 40.00, duration: 120, image: '', categoryId: gellak.id }
     ]
   });
 
   // 3. UGRADNJA NOKTIJU (9 usluga)
   await prisma.service.createMany({
     data: [
-      { name: 'Cover', description: 'Nokti boje kože s produživanjem dužine.', price: 39.00, duration: 60, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'French', description: 'Francuska manikura s produživanjem dužine.', price: 41.00, duration: 90, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'Boja', description: 'Nokti u boji s produživanjem dužine.', price: 40.00, duration: 90, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'BabyBoomer', description: 'Ombre nokti bijelo i cover s produživanjem dužine.', price: 44.00, duration: 90, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'L dužina', description: '', price: 5.00, duration: 30, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'XL dužina', description: '', price: 9.00, duration: 30, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'Cover', description: 'Nokti boje kože s produljivanjem duljine.', price: 39.00, duration: 60, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'French', description: 'Francuska manikura s produljivanjem duljine.', price: 41.00, duration: 90, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'Boja', description: 'Nokti u boji s produljivanjem duljine.', price: 40.00, duration: 90, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'BabyBoomer', description: 'Ombre nokti bijelo i cover s produljivanjem duljine.', price: 44.00, duration: 90, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'L duljina', description: '', price: 5.00, duration: 30, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'XL duljina', description: '', price: 9.00, duration: 30, image: '', categoryId: ugradnjaNoktiju.id },
       { name: 'Buildani french', description: 'Francuska manikura s umetanjem materijala u vrh nokta, oštra tehnika zida.', price: 60.00, duration: 180, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'Dodatno iscrtavanje, ombre efekt, extreme dužine', description: 'Nokti s posebnim motivima, nail artom na više noktiju. Cijena je informativnog karaktera.', price: 7.00, duration: 30, image: '', categoryId: ugradnjaNoktiju.id },
-      { name: 'Ne znam šta ću, radi što hoćeš', description: '', price: 50.00, duration: 150, image: '', categoryId: ugradnjaNoktiju.id }
+      { name: 'Dodatno iscrtavanje, ombre efekt, extreme duljine', description: 'Nokti s posebnim motivima, nail artom na više noktiju. Cijena je informativnog karaktera.', price: 7.00, duration: 30, image: '', categoryId: ugradnjaNoktiju.id },
+      { name: 'Ne znam što ću, radi što želiš', description: '', price: 50.00, duration: 150, image: '', categoryId: ugradnjaNoktiju.id }
     ]
   });
 
-  // 4. GELIRANJE PRIRODNE DUŽINE (6 usluga)
+  // 4. GELIRANJE PRIRODNE DULJINE (6 usluga)
   await prisma.service.createMany({
     data: [
-      { name: 'Cover', description: 'Nokti boje kože na prirodnu dužinu noktiju.', price: 29.00, duration: 60, image: '', categoryId: geliranjePrirodne.id },
-      { name: 'Boja', description: 'Nokti u boji na prirodnu dužinu noktiju.', price: 30.00, duration: 60, image: '', categoryId: geliranjePrirodne.id },
-      { name: 'French', description: 'Francuska manikura na prirodnu dužinu noktiju.', price: 31.00, duration: 90, image: '', categoryId: geliranjePrirodne.id },
-      { name: 'BabyBoomer', description: 'Ombre bijelo i cover na prirodnu dužinu noktiju.', price: 34.00, duration: 90, image: '', categoryId: geliranjePrirodne.id },
+      { name: 'Cover', description: 'Nokti boje kože na prirodnu duljinu noktiju.', price: 29.00, duration: 60, image: '', categoryId: geliranjePrirodne.id },
+      { name: 'Boja', description: 'Nokti u boji na prirodnu duljinu noktiju.', price: 30.00, duration: 60, image: '', categoryId: geliranjePrirodne.id },
+      { name: 'French', description: 'Francuska manikura na prirodnu duljinu noktiju.', price: 31.00, duration: 90, image: '', categoryId: geliranjePrirodne.id },
+      { name: 'BabyBoomer', description: 'Ombre bijelo i cover na prirodnu duljinu noktiju.', price: 34.00, duration: 90, image: '', categoryId: geliranjePrirodne.id },
       { name: 'Dodatno iscrtavanje, ombre, chrome', description: '', price: 7.00, duration: 30, image: '', categoryId: geliranjePrirodne.id },
-      { name: 'Ne znam šta ću, radi što hoćeš', description: '', price: 40.00, duration: 120, image: '', categoryId: geliranjePrirodne.id }
+      { name: 'Ne znam što ću, radi što želiš', description: '', price: 40.00, duration: 120, image: '', categoryId: geliranjePrirodne.id }
     ]
   });
 
@@ -189,12 +189,12 @@ async function main() {
     ]
   });
 
-  // 10. MIKROPIGMENTACIJA (4 usluge)
+  // 10. MIKROPIGMENTACIJA (4 usluga)
   await prisma.service.createMany({
     data: [
       { name: 'Puder obrve (prvi dolazak)', description: '', price: 160.00, duration: 120, image: '', categoryId: mikropigmentacija.id },
       { name: 'Puder obrve (prva korekcija nakon 1 mj)', description: '', price: 50.00, duration: 60, image: '', categoryId: mikropigmentacija.id },
-      { name: 'Puder obrve (osvježenje polugodišnje)', description: 'Polugodišnje osvježenje je većinom potrebno za osobe koje imaju extra masnu kožu.', price: 70.00, duration: 60, image: '', categoryId: mikropigmentacija.id },
+      { name: 'Puder obrve (osvježenje polugodišnje)', description: 'Polugodišnje osvježenje je većinom potrebno za osobe koje imaju ekstra masnu kožu.', price: 70.00, duration: 60, image: '', categoryId: mikropigmentacija.id },
       { name: 'Puder obrve (osvježenje nakon 1+ godinu)', description: '', price: 130.00, duration: 60, image: '', categoryId: mikropigmentacija.id }
     ]
   });

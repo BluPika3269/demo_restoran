@@ -46,7 +46,7 @@ async function testNeonConnection() {
     });
     console.log('\n🛠️ Usluge:');
     services.forEach(service => {
-      console.log(`  - ${service.name} (${service.price} KM, ${service.duration} min) - Kategorija: ${service.category.name}`);
+      console.log(`  - ${service.name} (${service.price} €, ${service.duration} min) - Kategorija: ${service.category.name}`);
     });
     
     // Test 6: Broj appointmenta

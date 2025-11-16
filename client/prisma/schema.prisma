@@ -8,12 +8,13 @@ datasource db {
 }
 
 model ServiceCategory {
-  id        Int       @id @default(autoincrement())
-  name      String
-  type      String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  services  Service[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  services    Service[]
 
   @@map("service_categories")
 }
