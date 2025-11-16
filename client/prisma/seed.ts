@@ -221,6 +221,54 @@ async function main() {
 
   const totalServices = await prisma.service.count();
   console.log(`✅ Created ${totalServices} services across 12 categories`);
+
+  // ==================== DEMO APPOINTMENTI ====================
+  
+  // Dobij sve usluge za random termine
+  const allServices = await prisma.service.findMany();
+  
+  // Demo appointmenti za novembar i decembar 2024
+  const demoAppointments = [
+    // Novembar 2024 - nekoliko termina
+    { serviceId: allServices[0].id, size: 'M', design: 'French', date: new Date('2024-11-18T10:00:00'), time: '10:00', customerName: 'Ana Marić', customerPhone: '+385911234567', customerEmail: 'ana.maric@example.com', status: 'confirmed' },
+    { serviceId: allServices[1].id, size: 'S', design: null, date: new Date('2024-11-18T14:00:00'), time: '14:00', customerName: 'Petra Horvat', customerPhone: '+385912345678', customerEmail: 'petra.horvat@example.com', status: 'confirmed' },
+    { serviceId: allServices[14].id, size: 'L', design: 'Ombre', date: new Date('2024-11-19T09:00:00'), time: '09:00', customerName: 'Marija Kovač', customerPhone: '+385913456789', customerEmail: 'marija.kovac@example.com', status: 'pending' },
+    { serviceId: allServices[8].id, size: 'M', design: 'Baby Boomer', date: new Date('2024-11-20T11:00:00'), time: '11:00', customerName: 'Ivana Novak', customerPhone: '+385914567890', customerEmail: 'ivana.novak@example.com', status: 'confirmed' },
+    { serviceId: allServices[2].id, size: 'S', design: null, date: new Date('2024-11-21T15:00:00'), time: '15:00', customerName: 'Lucija Babić', customerPhone: '+385915678901', customerEmail: 'lucija.babic@example.com', status: 'completed' },
+    { serviceId: allServices[15].id, size: 'M', design: 'Gel lak', date: new Date('2024-11-22T10:30:00'), time: '10:30', customerName: 'Sara Jurić', customerPhone: '+385916789012', customerEmail: 'sara.juric@example.com', status: 'confirmed' },
+    { serviceId: allServices[3].id, size: 'L', design: 'Chrome', date: new Date('2024-11-25T13:00:00'), time: '13:00', customerName: 'Maja Božić', customerPhone: '+385917890123', customerEmail: 'maja.bozic@example.com', status: 'pending' },
+    { serviceId: allServices[9].id, size: 'M', design: null, date: new Date('2024-11-26T09:30:00'), time: '09:30', customerName: 'Dora Matić', customerPhone: '+385918901234', customerEmail: 'dora.matic@example.com', status: 'confirmed' },
+    { serviceId: allServices[16].id, size: 'S', design: 'French', date: new Date('2024-11-27T14:30:00'), time: '14:30', customerName: 'Ela Pavić', customerPhone: '+385919012345', customerEmail: 'ela.pavic@example.com', status: 'completed' },
+    { serviceId: allServices[4].id, size: 'M', design: null, date: new Date('2024-11-28T11:30:00'), time: '11:30', customerName: 'Nina Tomić', customerPhone: '+385910123456', customerEmail: 'nina.tomic@example.com', status: 'confirmed' },
+    
+    // Decembar 2024 - nekoliko termina
+    { serviceId: allServices[10].id, size: 'L', design: 'Ombre efekt', date: new Date('2024-12-02T10:00:00'), time: '10:00', customerName: 'Ana Šimić', customerPhone: '+385921234567', customerEmail: 'ana.simic@example.com', status: 'pending' },
+    { serviceId: allServices[5].id, size: 'M', design: null, date: new Date('2024-12-03T13:00:00'), time: '13:00', customerName: 'Klara Vuković', customerPhone: '+385922345678', customerEmail: 'klara.vukovic@example.com', status: 'confirmed' },
+    { serviceId: allServices[17].id, size: 'S', design: 'Gel lak', date: new Date('2024-12-04T09:00:00'), time: '09:00', customerName: 'Lana Knežević', customerPhone: '+385923456789', customerEmail: 'lana.knezevic@example.com', status: 'confirmed' },
+    { serviceId: allServices[6].id, size: 'M', design: 'Baby Boomer', date: new Date('2024-12-05T15:00:00'), time: '15:00', customerName: 'Mia Barić', customerPhone: '+385924567890', customerEmail: 'mia.baric@example.com', status: 'completed' },
+    { serviceId: allServices[11].id, size: 'L', design: null, date: new Date('2024-12-06T10:30:00'), time: '10:30', customerName: 'Tea Petrović', customerPhone: '+385925678901', customerEmail: 'tea.petrovic@example.com', status: 'confirmed' },
+    { serviceId: allServices[18].id, size: 'S', design: 'French', date: new Date('2024-12-09T14:00:00'), time: '14:00', customerName: 'Nika Popović', customerPhone: '+385926789012', customerEmail: 'nika.popovic@example.com', status: 'pending' },
+    { serviceId: allServices[7].id, size: 'M', design: 'Chrome', date: new Date('2024-12-10T11:00:00'), time: '11:00', customerName: 'Luna Đurić', customerPhone: '+385927890123', customerEmail: 'luna.djuric@example.com', status: 'confirmed' },
+    { serviceId: allServices[12].id, size: 'L', design: null, date: new Date('2024-12-11T09:30:00'), time: '09:30', customerName: 'Ema Radić', customerPhone: '+385928901234', customerEmail: 'ema.radic@example.com', status: 'confirmed' },
+    { serviceId: allServices[19].id, size: 'M', design: 'Gel lak', date: new Date('2024-12-12T13:30:00'), time: '13:30', customerName: 'Sofia Bašić', customerPhone: '+385929012345', customerEmail: 'sofia.basic@example.com', status: 'completed' },
+    { serviceId: allServices[13].id, size: 'S', design: null, date: new Date('2024-12-13T10:00:00'), time: '10:00', customerName: 'Lara Kranjčec', customerPhone: '+385920123456', customerEmail: 'lara.kranjcec@example.com', status: 'confirmed' },
+    { serviceId: allServices[20].id, size: 'M', design: 'Ombre', date: new Date('2024-12-16T15:00:00'), time: '15:00', customerName: 'Iva Mihaljević', customerPhone: '+385931234567', customerEmail: 'iva.mihaljevic@example.com', status: 'pending' },
+    { serviceId: allServices[21].id, size: 'L', design: null, date: new Date('2024-12-17T11:30:00'), time: '11:30', customerName: 'Hana Filipović', customerPhone: '+385932345678', customerEmail: 'hana.filipovic@example.com', status: 'confirmed' },
+    { serviceId: allServices[22].id, size: 'S', design: 'Baby Boomer', date: new Date('2024-12-18T09:00:00'), time: '09:00', customerName: 'Tara Grgić', customerPhone: '+385933456789', customerEmail: 'tara.grgic@example.com', status: 'confirmed' },
+    { serviceId: allServices[23].id, size: 'M', design: null, date: new Date('2024-12-19T14:00:00'), time: '14:00', customerName: 'Nika Nikolić', customerPhone: '+385934567890', customerEmail: 'nika.nikolic@example.com', status: 'completed' },
+    { serviceId: allServices[24].id, size: 'L', design: 'French', date: new Date('2024-12-20T10:30:00'), time: '10:30', customerName: 'Petra Blažević', customerPhone: '+385935678901', customerEmail: 'petra.blazevic@example.com', status: 'confirmed' },
+    { serviceId: allServices[0].id, size: 'M', design: null, date: new Date('2024-12-23T13:00:00'), time: '13:00', customerName: 'Ana Lovrić', customerPhone: '+385936789012', customerEmail: 'ana.lovric@example.com', status: 'pending' },
+    { serviceId: allServices[25].id, size: 'S', design: 'Chrome', date: new Date('2024-12-26T09:30:00'), time: '09:30', customerName: 'Marta Marković', customerPhone: '+385937890123', customerEmail: 'marta.markovic@example.com', status: 'confirmed' },
+    { serviceId: allServices[1].id, size: 'M', design: null, date: new Date('2024-12-27T15:00:00'), time: '15:00', customerName: 'Laura Ivančić', customerPhone: '+385938901234', customerEmail: 'laura.ivancic@example.com', status: 'confirmed' },
+    { serviceId: allServices[26].id, size: 'L', design: 'Gel lak', date: new Date('2024-12-30T11:00:00'), time: '11:00', customerName: 'Eva Pavlović', customerPhone: '+385939012345', customerEmail: 'eva.pavlovic@example.com', status: 'completed' }
+  ];
+
+  await prisma.appointment.createMany({
+    data: demoAppointments
+  });
+
+  const totalAppointments = await prisma.appointment.count();
+  console.log(`✅ Created ${totalAppointments} demo appointments for November and December 2024`);
   console.log('🎉 Database seeding completed with Zoyya data!');
 }
 
