@@ -1,15 +1,16 @@
 @echo off
+chcp 65001 >nul
 echo ====================================
-echo   FULL DEPLOYMENT SCRIPT
+echo   DEPLOYMENT SKRIPTA
 echo ====================================
 echo.
-echo To run this script:
+echo Pokretanje skripte:
 echo   .\deploy-all.bat
 echo.
-echo This script will:
-echo   - Sync local database to Neon
-echo   - Commit and push to GitHub
-echo   - Deploy to Vercel production
+echo Ova skripta će:
+echo   - Sinkronizirati lokalnu bazu na Neon
+echo   - Commit i push na GitHub
+echo   - Deploy na Vercel produkciju
 echo.
 echo ====================================
 echo.
@@ -17,46 +18,46 @@ echo.
 cd /d "e:\Damii\Posao\PRIVATNO\Web stranice\Nokti"
 
 echo ====================================
-echo   DATABASE SYNC
+echo   SINKRONIZACIJA BAZE
 echo ====================================
 echo.
-echo Choose database action:
-echo [1] Upload local data to Neon (append)
-echo [2] Reset Neon database + upload local data (DELETE ALL)
-echo [3] Skip database sync
+echo Odaberi akciju za bazu:
+echo [1] Uploadaj lokalne podatke na Neon (dodaj podatke)
+echo [2] Resetiraj Neon bazu + uploadaj podatke (BRIŠE SVE!)
+echo [3] Preskoči sinkronizaciju baze
 echo.
-set /p db_choice="Enter choice (1/2/3): "
+set /p "db_choice=Upiši izbor (1/2/3): "
 
 if "%db_choice%"=="1" (
     echo.
-    echo Syncing local database to Neon...
+    echo Sinkroniziram lokalnu bazu na Neon...
     cd server
     set DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
     call npx tsx prisma/seed.ts
     cd ..
-    echo Database synced!
+    echo Baza sinkronizirana!
 )
 
 if "%db_choice%"=="2" (
     echo.
-    echo WARNING: This will DELETE ALL data on Neon database!
-    set /p confirm="Type YES to confirm: "
-    if /i "%confirm%"=="YES" (
+    echo UPOZORENJE: Ovo će OBRISATI SVE podatke na Neon bazi!
+    set /p "confirm=Upiši DA za potvrdu: "
+    if /i "%confirm%"=="DA" (
         echo.
-        echo Resetting Neon database...
+        echo Resetiram Neon bazu...
         cd server
         set DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
         call npx prisma migrate reset --force
         call npx tsx prisma/seed.ts
         cd ..
-        echo Database reset and seeded!
+        echo Baza resetirana i napunjena podacima!
     ) else (
-        echo Database reset cancelled.
+        echo Reset baze otkazan.
     )
 )
 
 if "%db_choice%"=="3" (
-    echo Skipping database sync...
+    echo Preskačem sinkronizaciju baze...
 )
 
 echo.
@@ -65,31 +66,31 @@ echo   GIT DEPLOYMENT
 echo ====================================
 echo.
 
-echo [1/4] Git add all changes...
+echo [1/4] Git add sve promjene...
 git add .
 
 echo.
 echo [2/4] Git commit...
-set /p commit_msg="Enter commit message (or press Enter for default): "
-if "%commit_msg%"=="" set commit_msg=Update deployment
+set /p "commit_msg=Upiši poruku commita (ili Enter za default): "
+if "%commit_msg%"=="" set "commit_msg=Update deployment"
 git commit -m "%commit_msg%"
 
 echo.
-echo [3/4] Git push to GitHub...
+echo [3/4] Git push na GitHub...
 git push origin master
 
 echo.
-echo [4/4] Deploying to Vercel production...
+echo [4/4] Deploy na Vercel produkciju...
 cd client
 call vercel --prod --yes
 
 echo.
 echo ====================================
-echo   SUCCESS!
+echo   USPJEŠNO!
 echo ====================================
 echo.
-echo Frontend + Backend deployed!
-echo Database synced to Neon!
-echo Check your app at Vercel dashboard
+echo Frontend + Backend deployani!
+echo Baza sinkronizirana na Neon!
+echo Provjeri aplikaciju na Vercel dashboardu
 echo.
 pause
