@@ -38,7 +38,7 @@ set db_choice=%ERRORLEVEL%
 if "%db_choice%"=="1" (
     echo.
     echo Sinkroniziram lokalnu bazu na Neon...
-    cd server
+    cd client
     set "DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     call npx tsx prisma/seed.ts
     cd ..
@@ -48,7 +48,7 @@ if "%db_choice%"=="1" (
 if "%db_choice%"=="2" (
     echo.
     echo Resetiram Neon bazu...
-    cd server
+    cd client
     set "DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     call npx prisma migrate reset --force
     call npx tsx prisma/seed.ts
