@@ -1,5 +1,5 @@
 // Skripta za sinkronizaciju lokalne baze na Neon
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('./client/node_modules/@prisma/client');
 
 // Lokalna baza
 const localPrisma = new PrismaClient({
@@ -87,13 +87,16 @@ async function syncData() {
       await neonPrisma.appointment.create({
         data: {
           id: apt.id,
-          name: apt.name,
-          email: apt.email,
-          phone: apt.phone,
+          serviceId: apt.serviceId,
+          size: apt.size,
+          design: apt.design,
           date: apt.date,
           time: apt.time,
-          service: apt.service,
+          customerName: apt.customerName,
+          customerPhone: apt.customerPhone,
+          customerEmail: apt.customerEmail,
           status: apt.status,
+          notes: apt.notes,
           createdAt: apt.createdAt,
           updatedAt: apt.updatedAt
         }

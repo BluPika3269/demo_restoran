@@ -28,8 +28,8 @@ echo   SINKRONIZACIJA BAZE
 echo ====================================
 echo.
 echo Odaberi akciju za bazu:
-echo [1] Uploadaj lokalne podatke na Neon (dodaj podatke)
-echo [2] Resetiraj Neon bazu + uploadaj podatke (BRISE SVE!)
+echo [1] Uploadaj lokalne podatke na Neon (web_stranica_nokti)
+echo [2] Resetiraj Neon + uploadaj lokalne podatke (BRISE SVE!)
 echo [3] Preskoci sinkronizaciju baze
 echo.
 choice /C 123 /N /M "Upisi izbor (1/2/3): "
@@ -44,13 +44,15 @@ if "%db_choice%"=="1" (
 
 if "%db_choice%"=="2" (
     echo.
-    echo Resetiram Neon bazu...
+    echo Resetiram i kreiram Neon bazu...
     cd client
     set "DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
-    call npx prisma migrate reset --force
-    call npx tsx prisma/seed.ts
+    call npx prisma migrate reset --force --skip-seed
     cd ..
-    echo Baza resetirana i napunjena podacima!
+    echo.
+    echo Uploadam lokalne podatke na Neon...
+    call node sync-local-to-neon.js
+    echo Baza resetirana i napunjena podacima iz lokalne baze!
 )
 
 if "%db_choice%"=="3" (
