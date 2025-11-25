@@ -5,6 +5,7 @@ import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, isToday } from 'date-fns';
+import { hr } from 'date-fns/locale';
 import Navigation from '@/components/Navigation';
 
 const API_URL = '/api';
@@ -305,7 +306,7 @@ export default function OrderPage() {
                 className={`p-6 ${selectedCategory ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
                 onClick={() => selectedCategory && setSelectedCategory(null)}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col">
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedCategory ? 'bg-green-500' : 'bg-pink-500'}`}>
                       {selectedCategory ? (
@@ -316,15 +317,18 @@ export default function OrderPage() {
                         <span className="text-white font-bold">1</span>
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Odaberite Kategoriju</h2>
                       {selectedCategory && (
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{selectedCategory.name}</p>
                       )}
                     </div>
+                    {selectedCategory && (
+                      <button className="hidden sm:block text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
+                    )}
                   </div>
                   {selectedCategory && (
-                    <button className="text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
+                    <button className="sm:hidden text-pink-500 hover:text-pink-600 text-sm font-medium mt-2 ml-14 self-start">Promijeni</button>
                   )}
                 </div>
               </div>
@@ -365,7 +369,7 @@ export default function OrderPage() {
                   className={`p-6 ${selectedService ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
                   onClick={() => selectedService && setSelectedService(null)}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedService ? 'bg-green-500' : 'bg-pink-500'}`}>
                         {selectedService ? (
@@ -376,15 +380,18 @@ export default function OrderPage() {
                           <span className="text-white font-bold">2</span>
                         )}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Odaberite Uslugu</h2>
                         {selectedService && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{selectedService.name} - {selectedService.price}€</p>
                         )}
                       </div>
+                      {selectedService && (
+                        <button className="hidden sm:block text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
+                      )}
                     </div>
                     {selectedService && (
-                      <button className="text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
+                      <button className="sm:hidden text-pink-500 hover:text-pink-600 text-sm font-medium mt-2 ml-14 self-start">Promijeni</button>
                     )}
                   </div>
                 </div>
@@ -412,100 +419,19 @@ export default function OrderPage() {
               </div>
             )}
 
-            {/* KORAK 3: Datum */}
+            {/* KORAK 3: Datum i Vrijeme */}
             {selectedService && (
-              <div className={`bg-white dark:bg-gray-800 rounded-lg shadow transition-all duration-500 animate-slide-down ${selectedDate ? 'overflow-hidden' : ''}`}>
-                <div 
-                  className={`p-6 ${selectedDate ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
-                  onClick={() => selectedDate && setSelectedDate(null)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedDate ? 'bg-green-500' : 'bg-pink-500'}`}>
-                        {selectedDate ? (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <span className="text-white font-bold">3</span>
-                        )}
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Odaberite Datum</h2>
-                        {selectedDate && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{format(selectedDate, 'dd.MM.yyyy')}</p>
-                        )}
-                      </div>
-                    </div>
-                    {selectedDate && (
-                      <button className="text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
-                    )}
-                  </div>
-                </div>
-                
-                {!selectedDate && (
-                  <div className="px-6 pb-6 animate-slide-down">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Odaberite datum</h3>
-                      {!isToday(calendarDate) && (
-                        <button
-                          onClick={() => setCalendarDate(new Date())}
-                          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
-                        >
-                          Danas
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex justify-center">
-                      <div className="calendar-container">
-                        <Calendar
-                          key={calendarDate.toISOString()}
-                          onChange={(value) => {
-                            setCalendarDate(value as Date);
-                            handleDateSelect(value as Date);
-                          }}
-                          value={calendarDate}
-                          minDate={new Date()}
-                          tileDisabled={({ date }) => date.getDay() === 0 || isHoliday(date)}
-                          tileContent={tileContent}
-                          tileClassName={({ date }) => {
-                            const isCurrentMonth = date.getMonth() === calendarDate.getMonth() && date.getFullYear() === calendarDate.getFullYear();
-                            const holiday = isHoliday(date);
-                            const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
-                            let classes = '';
-                            if (!isCurrentMonth) classes += 'react-calendar__tile--other-month ';
-                            if (holiday) classes += 'react-calendar__tile--holiday ';
-                            if (isPastDate) classes += 'react-calendar__tile--past ';
-                            return classes.trim();
-                          }}
-                          className="border rounded shadow"
-                        />
-                      </div>
-                    </div>
-                    {/* Legend */}
-                    <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span>Praznik - zatvoreno</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="line-through opacity-50">15</span>
-                        <span>Prošli datum</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* KORAK 4: Vrijeme */}
-            {selectedDate && (
               <div className={`bg-white dark:bg-gray-800 rounded-lg shadow transition-all duration-500 animate-slide-down ${selectedTime ? 'overflow-hidden' : ''}`}>
                 <div 
                   className={`p-6 ${selectedTime ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
-                  onClick={() => selectedTime && setSelectedTime('')}
+                  onClick={() => {
+                    if (selectedTime) {
+                      setSelectedDate(null);
+                      setSelectedTime('');
+                    }
+                  }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedTime ? 'bg-green-500' : 'bg-pink-500'}`}>
                         {selectedTime ? (
@@ -513,75 +439,167 @@ export default function OrderPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
-                          <span className="text-white font-bold">4</span>
+                          <span className="text-white font-bold">3</span>
                         )}
                       </div>
-                      <div>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Odaberite Vrijeme</h2>
-                        {selectedTime && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{selectedTime}</p>
+                      <div className="flex-1">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Odaberite Datum i Vrijeme</h2>
+                        {selectedDate && selectedTime && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{format(selectedDate, 'dd.MM.yyyy')} u {selectedTime}</p>
                         )}
                       </div>
+                      {selectedTime && (
+                        <button className="hidden sm:block text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
+                      )}
                     </div>
                     {selectedTime && (
-                      <button className="text-pink-500 hover:text-pink-600 text-sm font-medium">Promijeni</button>
+                      <button className="sm:hidden text-pink-500 hover:text-pink-600 text-sm font-medium mt-2 ml-14 self-start">Promijeni</button>
                     )}
                   </div>
                 </div>
                 
                 {!selectedTime && (
                   <div className="px-6 pb-6 animate-slide-down">
-                    {loading ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-600 dark:text-gray-400">Učitavam dostupne termine...</p>
+                    {/* Kalendar */}
+                    <div className="mb-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Odaberite datum</h3>
+                        {!isToday(calendarDate) && (
+                          <button
+                            onClick={() => setCalendarDate(new Date())}
+                            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                          >
+                            Danas
+                          </button>
+                        )}
                       </div>
-                    ) : (() => {
-                      const filteredSlots = availableSlots.filter(slot => {
-                        // Filter out past times for today
-                        if (selectedDate && isToday(selectedDate)) {
-                          const now = new Date();
-                          const [hours, minutes] = slot.split(':').map(Number);
-                          const slotTime = new Date();
-                          slotTime.setHours(hours, minutes, 0, 0);
-                          return slotTime > now;
-                        }
-                        return true;
-                      });
-                      
-                      return filteredSlots.length > 0 ? (
-                        <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                          {filteredSlots.map((slot) => (
-                            <button 
-                              key={slot} 
-                              onClick={() => handleTimeSelect(slot)} 
-                              className="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-pink-500 hover:shadow-lg transition-all font-medium text-gray-900 dark:text-white transform hover:scale-105"
-                            >
-                              {slot}
-                            </button>
-                          ))}
+                      <div className="flex justify-center">
+                        <div className="calendar-container">
+                            <Calendar
+                              onChange={(value) => {
+                                setCalendarDate(value as Date);
+                                handleDateSelect(value as Date);
+                              }}
+                              value={selectedDate}
+                              minDate={new Date()}
+                              activeStartDate={calendarDate}
+                              onActiveStartDateChange={({ activeStartDate }) => {
+                                if (activeStartDate) setCalendarDate(activeStartDate);
+                              }}
+                              showDoubleView={false}
+                              prev2Label={null}
+                              next2Label={null}
+                              tileContent={tileContent}
+                              tileClassName={({ date }) => {
+                                const isCurrentMonth = date.getMonth() === calendarDate.getMonth() && date.getFullYear() === calendarDate.getFullYear();
+                                const holiday = isHoliday(date);
+                                const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
+                                let classes = '';
+                                if (!isCurrentMonth) classes += 'react-calendar__tile--other-month ';
+                                if (holiday) classes += 'react-calendar__tile--holiday ';
+                                if (isPastDate) classes += 'react-calendar__tile--past ';
+                                return classes.trim();
+                              }}
+                              formatShortWeekday={(locale, date) => format(date, 'EEEEEE', { locale: hr })}
+                              formatMonthYear={(locale, date) => format(date, 'LLLL yyyy.', { locale: hr })}
+                              locale="hr-HR"
+                              className="border rounded shadow"
+                            />
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-gray-600 dark:text-gray-400">
-                            {selectedDate && isToday(selectedDate) && availableSlots.length > 0 
-                              ? "Nema dostupnih termina za današnji dan (svi termini su prošli)." 
-                              : "Nema dostupnih termina za odabrani datum."}
+                        {/* Legend */}
+                        <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <span>Praznik - zatvoreno</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="line-through opacity-50">15</span>
+                          <span>Prošli datum</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dostupni termini */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        {selectedDate ? `Dostupni termini za ${format(selectedDate, 'dd.MM.yyyy')}` : 'Odaberite datum u kalendaru'}
+                        {selectedDate && isHoliday(selectedDate) && (
+                          <span className="ml-2 text-sm text-red-500 dark:text-red-400">
+                            ({getHolidayName(selectedDate)})
+                          </span>
+                        )}
+                      </h3>
+                      {!selectedDate ? (
+                        <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                          <p className="text-gray-500 dark:text-gray-400 text-center px-4">
+                            ↑ Prvo odaberite datum u kalendaru
                           </p>
                         </div>
-                      );
-                    })()}
+                      ) : selectedDate.getDay() === 0 ? (
+                        <div className="flex items-center justify-center h-32 border-2 border-dashed border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20">
+                          <p className="text-red-600 dark:text-red-400 text-center px-4 font-medium">
+                            Nedjelja - Salon ne radi
+                          </p>
+                        </div>
+                      ) : isHoliday(selectedDate) ? (
+                        <div className="flex items-center justify-center h-32 border-2 border-dashed border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20">
+                          <p className="text-red-600 dark:text-red-400 text-center px-4 font-medium">
+                            Praznik - {getHolidayName(selectedDate)}<br/>Salon je zatvoren
+                          </p>
+                        </div>
+                      ) : loading ? (
+                        <div className="flex items-center justify-center h-32">
+                          <p className="text-gray-600 dark:text-gray-400">Učitavam dostupne termine...</p>
+                        </div>
+                      ) : (() => {
+                          const filteredSlots = availableSlots.filter(slot => {
+                            // Filter out past times for today
+                            if (selectedDate && isToday(selectedDate)) {
+                              const now = new Date();
+                              const [hours, minutes] = slot.split(':').map(Number);
+                              const slotTime = new Date();
+                              slotTime.setHours(hours, minutes, 0, 0);
+                              return slotTime > now;
+                            }
+                            return true;
+                          });
+                          
+                          return filteredSlots.length > 0 ? (
+                            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                              {filteredSlots.map((slot) => (
+                                <button 
+                                  key={slot} 
+                                  onClick={() => handleTimeSelect(slot)} 
+                                  className="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-pink-500 hover:shadow-lg transition-all font-medium text-gray-900 dark:text-white transform hover:scale-105"
+                                >
+                                  {slot}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                              <p className="text-gray-600 dark:text-gray-400 text-center px-4">
+                                {selectedDate && isToday(selectedDate) && availableSlots.length > 0 
+                                  ? "Nema dostupnih termina za današnji dan (svi termini su prošli)." 
+                                  : "Nema dostupnih termina za odabrani datum."}
+                              </p>
+                            </div>
+                          );
+                        })()}
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* KORAK 5: Podaci */}
+            {/* KORAK 4: Podaci */}
             {selectedTime && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow transition-all duration-500 animate-slide-down">
                 <div className="p-6">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center bg-pink-500">
-                      <span className="text-white font-bold">5</span>
+                      <span className="text-white font-bold">4</span>
                     </div>
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Vaši Podaci</h2>
                   </div>
@@ -728,6 +746,9 @@ export default function OrderPage() {
         .calendar-container .react-calendar__navigation {
           background: transparent;
         }
+        .calendar-container .react-calendar__navigation button:disabled {
+          display: none;
+        }
         .dark .calendar-container .react-calendar__navigation button {
           color: rgb(243 244 246);
         }
@@ -746,14 +767,24 @@ export default function OrderPage() {
           color: rgb(156 163 175);
         }
         .calendar-container .react-calendar__tile {
-          padding: 0.75em 0.5em;
+          padding: 0.5em 0.5em;
           position: relative;
           background: white;
           color: rgb(17 24 39);
+          height: 80px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
         }
         .dark .calendar-container .react-calendar__tile {
           background: rgb(31 41 55);
           color: rgb(243 244 246);
+        }
+        .calendar-container .react-calendar__tile abbr {
+          display: block;
+          height: 24px;
+          line-height: 24px;
         }
         .calendar-container .react-calendar__tile:enabled:hover,
         .calendar-container .react-calendar__tile:enabled:focus {
@@ -777,19 +808,29 @@ export default function OrderPage() {
         .dark .calendar-container .react-calendar__tile--holiday {
           background: rgba(239, 68, 68, 0.2);
         }
-        .calendar-container .react-calendar__tile--past {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
-        .dark .calendar-container .react-calendar__tile--past {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
         .calendar-container .react-calendar__tile--other-month {
-          color: rgb(156 163 175);
+          opacity: 0.35 !important;
+          color: rgb(156 163 175) !important;
         }
         .dark .calendar-container .react-calendar__tile--other-month {
-          color: rgb(107 114 128);
+          opacity: 0.35 !important;
+          color: rgb(107 114 128) !important;
+        }
+        .calendar-container .react-calendar__tile--past:not(.react-calendar__tile--other-month) {
+          text-decoration: line-through;
+          opacity: 0.5;
+        }
+        .dark .calendar-container .react-calendar__tile--past:not(.react-calendar__tile--other-month) {
+          text-decoration: line-through;
+          opacity: 0.5;
+        }
+        .calendar-container .react-calendar__tile--past.react-calendar__tile--other-month {
+          text-decoration: line-through;
+          opacity: 0.25 !important;
+        }
+        .dark .calendar-container .react-calendar__tile--past.react-calendar__tile--other-month {
+          text-decoration: line-through;
+          opacity: 0.25 !important;
         }
       `}</style>
     </div>
