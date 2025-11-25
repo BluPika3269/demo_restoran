@@ -5,12 +5,14 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Delete all existing data
+  // Delete all existing data (prvo appointmente, pa services, pa categories)
+  await prisma.appointment.deleteMany();
   await prisma.service.deleteMany();
   await prisma.serviceCategory.deleteMany();
   console.log('🗑️  Cleared existing data');
 
   // Reset auto-increment sequences to start from 1
+  await prisma.$executeRaw`ALTER SEQUENCE appointments_id_seq RESTART WITH 1`;
   await prisma.$executeRaw`ALTER SEQUENCE service_categories_id_seq RESTART WITH 1`;
   await prisma.$executeRaw`ALTER SEQUENCE services_id_seq RESTART WITH 1`;
   console.log('🔄 Reset ID sequences to start from 1');
@@ -18,51 +20,51 @@ async function main() {
   // ==================== KATEGORIJE ====================
   
   const dopunaNoktiju = await prisma.serviceCategory.create({
-    data: { name: 'Dopuna noktiju', type: 'umjetni' }
+    data: { name: 'Dopuna noktiju' }
   });
 
   const gellak = await prisma.serviceCategory.create({
-    data: { name: 'Gellak', type: 'prirodni' }
+    data: { name: 'Gellak' }
   });
 
   const ugradnjaNoktiju = await prisma.serviceCategory.create({
-    data: { name: 'Ugradnja noktiju', type: 'umjetni' }
+    data: { name: 'Ugradnja noktiju' }
   });
 
   const geliranjePrirodne = await prisma.serviceCategory.create({
-    data: { name: 'Geliranje prirodne dužine', type: 'prirodni' }
+    data: { name: 'Geliranje prirodne dužine' }
   });
 
   const njegaNoktiju = await prisma.serviceCategory.create({
-    data: { name: 'Njega noktiju', type: 'prirodni' }
+    data: { name: 'Njega noktiju' }
   });
 
   const depilacija = await prisma.serviceCategory.create({
-    data: { name: 'Depilacija', type: 'prirodni' }
+    data: { name: 'Depilacija' }
   });
 
   const njegaNogu = await prisma.serviceCategory.create({
-    data: { name: 'Njega nogu', type: 'prirodni' }
+    data: { name: 'Njega nogu' }
   });
 
   const sminkanje = await prisma.serviceCategory.create({
-    data: { name: 'Šminkanje', type: 'prirodni' }
+    data: { name: 'Šminkanje' }
   });
 
   const keratinskiTretmani = await prisma.serviceCategory.create({
-    data: { name: 'Keratinski tretmani', type: 'prirodni' }
+    data: { name: 'Keratinski tretmani' }
   });
 
   const mikropigmentacija = await prisma.serviceCategory.create({
-    data: { name: 'Mikropigmentacija', type: 'prirodni' }
+    data: { name: 'Mikropigmentacija' }
   });
 
   const tretmaniLica = await prisma.serviceCategory.create({
-    data: { name: 'Tretmani lica', type: 'prirodni' }
+    data: { name: 'Tretmani lica' }
   });
 
   const ostaliTretmani = await prisma.serviceCategory.create({
-    data: { name: 'Ostali tretmani', type: 'prirodni' }
+    data: { name: 'Ostali tretmani' }
   });
 
   console.log('✅ Created 12 categories');
@@ -221,6 +223,293 @@ async function main() {
 
   const totalServices = await prisma.service.count();
   console.log(`✅ Created ${totalServices} services across 12 categories`);
+
+  // ==================== DODAVANJE APPOINTMENTA ====================
+  // Studeni 2025, Prosinac 2025, Siječanj 2026
+  // Izbjegavamo nedjelje i praznike
+
+  const prazniciHrvatska = [
+    '2025-11-01', // Svi sveti
+    '2025-11-18', // Dan sjećanja na žrtve Domovinskog rata
+    '2025-12-25', // Božić
+    '2025-12-26', // Sv. Stjepan
+    '2026-01-01', // Nova godina
+    '2026-01-06'  // Bogojavljenje
+  ];
+
+  const radnoVrijeme = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+  ];
+
+  const imenaPrezimena = [
+    { ime: 'Ana Marić', email: 'ana.maric@example.com', telefon: '091-234-5678' },
+    { ime: 'Petra Kovač', email: 'petra.kovac@example.com', telefon: '092-345-6789' },
+    { ime: 'Maja Horvat', email: 'maja.horvat@example.com', telefon: '098-456-7890' },
+    { ime: 'Ivana Babić', email: 'ivana.babic@example.com', telefon: '091-567-8901' },
+    { ime: 'Lana Novak', email: 'lana.novak@example.com', telefon: '099-678-9012' },
+    { ime: 'Sara Jurić', email: 'sara.juric@example.com', telefon: '091-789-0123' },
+    { ime: 'Ema Filipović', email: 'ema.filipovic@example.com', telefon: '095-890-1234' },
+    { ime: 'Lucija Knežević', email: 'lucija.knezevic@example.com', telefon: '092-901-2345' },
+    { ime: 'Marta Pavlović', email: 'marta.pavlovic@example.com', telefon: '098-012-3456' },
+    { ime: 'Nikolina Tomić', email: 'nikolina.tomic@example.com', telefon: '091-123-4567' }
+  ];
+
+  const designs = [
+    'francuski',
+    'baby boomer',
+    'jednobojno - nude',
+    'jednobojno - crno',
+    'ombre effect',
+    'chrome finish',
+    'cvjetni motivi',
+    'geometrijski dizajn',
+    'minimalistički',
+    'bez dizajna - cover'
+  ];
+
+  const sizes = ['S', 'M', 'L', ''];
+  const statuses = ['approved', 'approved', 'approved', 'pending', 'completed'];
+
+  // Dohvaćanje usluga za appointmente (fokus na nokte)
+  const servicesForAppointments = await prisma.service.findMany({
+    where: {
+      OR: [
+        { categoryId: dopunaNoktiju.id },
+        { categoryId: gellak.id },
+        { categoryId: ugradnjaNoktiju.id },
+        { categoryId: geliranjePrirodne.id }
+      ]
+    }
+  });
+
+  // Funkcija za provjeru je li datum nedjela
+  function isNedjela(datum: Date): boolean {
+    return datum.getDay() === 0; // 0 = nedjela
+  }
+
+  // Funkcija za formatiranje datuma u YYYY-MM-DD
+  function formatDatum(datum: Date): string {
+    return datum.toISOString().split('T')[0];
+  }
+
+  // Generiranje appointmenta za studeni, prosinac i siječanj
+  const appointmentsData = [];
+  
+  // Dani koji trebaju biti full puni (demo scenario - nema slobodnih termina)
+  const fullPuniDani = [
+    '2025-11-27', // Srijeda - pun dan
+    '2025-12-05', // Petak - pun dan
+    '2025-12-20', // Subota prije Božića - pun dan
+    '2026-01-09'  // Petak - pun dan
+  ];
+
+  // Studeni 2025 (od 25.11. do kraja mjeseca)
+  for (let day = 25; day <= 30; day++) {
+    const datum = new Date(2025, 10, day); // mjesec 10 = studeni
+    const datumStr = formatDatum(datum);
+    
+    if (isNedjela(datum) || prazniciHrvatska.includes(datumStr)) continue;
+
+    // Ako je full pun dan, dodaj sve termine
+    const isFullPun = fullPuniDani.includes(datumStr);
+    
+    if (!isFullPun) {
+      // 40% šansa da dan bude prazan (bez termina)
+      if (Math.random() < 0.4) continue;
+    }
+
+    // Full puni dani dobivaju više appointmenta, ostali 2-4
+    const brojAppointmenta = isFullPun ? 7 : (Math.floor(Math.random() * 3) + 2);
+    
+    // Prati zauzeta vremena za ovaj dan
+    const zauzeteSlotove: Array<{start: number, end: number}> = [];
+    
+    for (let i = 0; i < brojAppointmenta; i++) {
+      const randomService = servicesForAppointments[Math.floor(Math.random() * servicesForAppointments.length)];
+      
+      // Nađi slobodan slot
+      let slobodanSlot: string | null = null;
+      const shuffledVrijeme = [...radnoVrijeme].sort(() => Math.random() - 0.5);
+      
+      for (const vrijeme of shuffledVrijeme) {
+        const [hours, minutes] = vrijeme.split(':').map(Number);
+        const slotStart = hours * 60 + minutes;
+        const slotEnd = slotStart + randomService.duration;
+        
+        // Provjeri da li je slot slobodan
+        const isSlobodan = !zauzeteSlotove.some(slot => {
+          return (slotStart < slot.end && slotEnd > slot.start);
+        });
+        
+        if (isSlobodan && slotEnd <= 18 * 60) { // Ne prelazi 18:00
+          slobodanSlot = vrijeme;
+          zauzeteSlotove.push({ start: slotStart, end: slotEnd });
+          break;
+        }
+      }
+      
+      // Ako nema slobodnog slota, preskoči
+      if (!slobodanSlot) continue;
+      
+      const randomKlijent = imenaPrezimena[Math.floor(Math.random() * imenaPrezimena.length)];
+      const randomDesign = designs[Math.floor(Math.random() * designs.length)];
+      const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+      appointmentsData.push({
+        serviceId: randomService.id,
+        size: randomSize,
+        design: randomDesign,
+        date: datum,
+        time: slobodanSlot,
+        customerName: randomKlijent.ime,
+        customerPhone: randomKlijent.telefon,
+        customerEmail: randomKlijent.email,
+        status: randomStatus,
+        notes: Math.random() > 0.7 ? 'Alergična na određene materijale' : null
+      });
+    }
+  }
+
+  // Prosinac 2025
+  for (let day = 1; day <= 31; day++) {
+    const datum = new Date(2025, 11, day); // mjesec 11 = prosinac
+    const datumStr = formatDatum(datum);
+    
+    if (isNedjela(datum) || prazniciHrvatska.includes(datumStr)) continue;
+
+    const isFullPun = fullPuniDani.includes(datumStr);
+    
+    if (!isFullPun) {
+      // 40% šansa da dan bude prazan (bez termina)
+      if (Math.random() < 0.4) continue;
+    }
+
+    const brojAppointmenta = isFullPun ? 7 : (Math.floor(Math.random() * 3) + 2);
+    
+    // Prati zauzeta vremena za ovaj dan
+    const zauzeteSlotove: Array<{start: number, end: number}> = [];
+    
+    for (let i = 0; i < brojAppointmenta; i++) {
+      const randomService = servicesForAppointments[Math.floor(Math.random() * servicesForAppointments.length)];
+      
+      // Nađi slobodan slot
+      let slobodanSlot: string | null = null;
+      const shuffledVrijeme = [...radnoVrijeme].sort(() => Math.random() - 0.5);
+      
+      for (const vrijeme of shuffledVrijeme) {
+        const [hours, minutes] = vrijeme.split(':').map(Number);
+        const slotStart = hours * 60 + minutes;
+        const slotEnd = slotStart + randomService.duration;
+        
+        // Provjeri da li je slot slobodan
+        const isSlobodan = !zauzeteSlotove.some(slot => {
+          return (slotStart < slot.end && slotEnd > slot.start);
+        });
+        
+        if (isSlobodan && slotEnd <= 18 * 60) {
+          slobodanSlot = vrijeme;
+          zauzeteSlotove.push({ start: slotStart, end: slotEnd });
+          break;
+        }
+      }
+      
+      if (!slobodanSlot) continue;
+      
+      const randomKlijent = imenaPrezimena[Math.floor(Math.random() * imenaPrezimena.length)];
+      const randomDesign = designs[Math.floor(Math.random() * designs.length)];
+      const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+      appointmentsData.push({
+        serviceId: randomService.id,
+        size: randomSize,
+        design: randomDesign,
+        date: datum,
+        time: slobodanSlot,
+        customerName: randomKlijent.ime,
+        customerPhone: randomKlijent.telefon,
+        customerEmail: randomKlijent.email,
+        status: randomStatus,
+        notes: Math.random() > 0.7 ? 'Dolazim prvi put' : null
+      });
+    }
+  }
+
+  // Siječanj 2026
+  for (let day = 1; day <= 31; day++) {
+    const datum = new Date(2026, 0, day); // mjesec 0 = siječanj
+    const datumStr = formatDatum(datum);
+    
+    if (isNedjela(datum) || prazniciHrvatska.includes(datumStr)) continue;
+
+    const isFullPun = fullPuniDani.includes(datumStr);
+    
+    if (!isFullPun) {
+      // 40% šansa da dan bude prazan (bez termina)
+      if (Math.random() < 0.4) continue;
+    }
+
+    const brojAppointmenta = isFullPun ? 7 : (Math.floor(Math.random() * 3) + 2);
+    
+    // Prati zauzeta vremena za ovaj dan
+    const zauzeteSlotove: Array<{start: number, end: number}> = [];
+    
+    for (let i = 0; i < brojAppointmenta; i++) {
+      const randomService = servicesForAppointments[Math.floor(Math.random() * servicesForAppointments.length)];
+      
+      // Nađi slobodan slot
+      let slobodanSlot: string | null = null;
+      const shuffledVrijeme = [...radnoVrijeme].sort(() => Math.random() - 0.5);
+      
+      for (const vrijeme of shuffledVrijeme) {
+        const [hours, minutes] = vrijeme.split(':').map(Number);
+        const slotStart = hours * 60 + minutes;
+        const slotEnd = slotStart + randomService.duration;
+        
+        // Provjeri da li je slot slobodan
+        const isSlobodan = !zauzeteSlotove.some(slot => {
+          return (slotStart < slot.end && slotEnd > slot.start);
+        });
+        
+        if (isSlobodan && slotEnd <= 18 * 60) {
+          slobodanSlot = vrijeme;
+          zauzeteSlotove.push({ start: slotStart, end: slotEnd });
+          break;
+        }
+      }
+      
+      if (!slobodanSlot) continue;
+      
+      const randomKlijent = imenaPrezimena[Math.floor(Math.random() * imenaPrezimena.length)];
+      const randomDesign = designs[Math.floor(Math.random() * designs.length)];
+      const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+      appointmentsData.push({
+        serviceId: randomService.id,
+        size: randomSize,
+        design: randomDesign,
+        date: datum,
+        time: slobodanSlot,
+        customerName: randomKlijent.ime,
+        customerPhone: randomKlijent.telefon,
+        customerEmail: randomKlijent.email,
+        status: randomStatus,
+        notes: Math.random() > 0.7 ? 'Hitno -SpecijalnaE prigoda' : null
+      });
+    }
+  }
+
+  // Kreiranje appointmenta u bazi
+  await prisma.appointment.createMany({
+    data: appointmentsData
+  });
+
+  const totalAppointments = await prisma.appointment.count();
+  console.log(`✅ Created ${totalAppointments} appointments (Nov, Dec 2025, Jan 2026)`);
   console.log('🎉 Database seeding completed with Zoyya data!');
 }
 

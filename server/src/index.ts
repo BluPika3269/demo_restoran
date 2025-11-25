@@ -105,17 +105,24 @@ app.get('/api/availability', async (req, res) => {
     };
 
     const availableSlots: string[] = [];
-    const slotDuration = 30; // 30 minutes
+    const slotDuration = 30; // 30 minutes interval za testiranje slotova
 
     for (let time = workingHours.start; time < workingHours.end; time += slotDuration) {
       const slotStart = time;
-      const slotEnd = time + service.duration;
+      const slotEnd = slotStart + service.duration;
 
-      // Check if slot conflicts with existing appointments
+      // Provjeri da li slot završava unutar radnog vremena
+      if (slotEnd > workingHours.end) {
+        continue; // Preskaći slot ako bi termin završio nakon kraja radnog vremena
+      }
+
+      // Provjeri da li se slot preklapa sa postojećim appointmentima
       const conflict = appointments.some((appointment: any) => {
         const appointmentStart = timeStringToMinutes(appointment.time);
         const appointmentEnd = appointmentStart + appointment.service.duration;
 
+        // Termin se preklapa ako:
+        // novi slot počinje prije kraja postojećeg I završava nakon početka postojećeg
         return (slotStart < appointmentEnd && slotEnd > appointmentStart);
       });
 
@@ -201,17 +208,34 @@ app.post('/api/appointments', async (req, res) => {
       return res.status(400).json({ error: 'Service not found' });
     }
 
-    // Check if time slot is available
-    const existingAppointment = await prisma.appointment.findFirst({
+    // Check if time slot is available - provjeri preklapanje sa postojećim terminima
+    const requestedStart = timeStringToMinutes(time);
+    const requestedEnd = requestedStart + service.duration;
+
+    const existingAppointments = await prisma.appointment.findMany({
       where: {
         date: new Date(date),
-        time: time,
         status: { in: ['pending', 'approved'] }
+      },
+      include: {
+        service: true
       }
     });
 
-    if (existingAppointment) {
-      return res.status(400).json({ error: 'Time slot not available' });
+    // Provjera preklapanja
+    const hasConflict = existingAppointments.some((apt) => {
+      const aptStart = timeStringToMinutes(apt.time);
+      const aptEnd = aptStart + apt.service.duration;
+      
+      // Termini se preklapaju ako:
+      // - novi termin počinje prije kraja postojećeg I završava nakon početka postojećeg
+      return (requestedStart < aptEnd && requestedEnd > aptStart);
+    });
+
+    if (hasConflict) {
+      return res.status(400).json({ 
+        error: 'Termin se preklapa s postojećim terminom. Molimo odaberite drugo vrijeme.' 
+      });
     }
 
     const appointment = await prisma.appointment.create({
@@ -302,11 +326,61 @@ app.get('/api/admin/appointments', async (req, res) => {
 app.patch('/api/admin/appointments/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, date, time } = req.body;
+    const appointmentId = parseInt(id);
+
+    // Dohvati trenutni appointment
+    const currentAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { service: true }
+    });
+
+    if (!currentAppointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // Ako se mijenja datum ili vrijeme, provjeri preklapanje
+    if (date || time) {
+      const newDate = date ? new Date(date) : currentAppointment.date;
+      const newTime = time || currentAppointment.time;
+      
+      const requestedStart = timeStringToMinutes(newTime);
+      const requestedEnd = requestedStart + currentAppointment.service.duration;
+
+      const existingAppointments = await prisma.appointment.findMany({
+        where: {
+          date: newDate,
+          status: { in: ['pending', 'approved'] },
+          id: { not: appointmentId } // Isključi trenutni appointment
+        },
+        include: {
+          service: true
+        }
+      });
+
+      // Provjera preklapanja
+      const hasConflict = existingAppointments.some((apt) => {
+        const aptStart = timeStringToMinutes(apt.time);
+        const aptEnd = aptStart + apt.service.duration;
+        
+        return (requestedStart < aptEnd && requestedEnd > aptStart);
+      });
+
+      if (hasConflict) {
+        return res.status(400).json({ 
+          error: 'Novi termin se preklapa s postojećim terminom. Molimo odaberite drugo vrijeme.' 
+        });
+      }
+    }
+
+    const updateData: any = {};
+    if (status) updateData.status = status;
+    if (date) updateData.date = new Date(date);
+    if (time) updateData.time = time;
 
     const appointment = await prisma.appointment.update({
-      where: { id: parseInt(id) },
-      data: { status },
+      where: { id: appointmentId },
+      data: updateData,
       include: {
         service: true
       }
@@ -354,6 +428,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`\n📍 Backend API endpoints:`);
+  console.log(`   Health:       http://localhost:${PORT}/api/health`);
+  console.log(`   Services:     http://localhost:${PORT}/api/services`);
+  console.log(`   Categories:   http://localhost:${PORT}/api/categories`);
+  console.log(`   Appointments: http://localhost:${PORT}/api/appointments`);
+  console.log(`\n✅ Otvori bilo koji link u browseru da testiraš!\n`);
 });
 
 export default app;

@@ -25,6 +25,12 @@ function generateTimeSlots(date: Date, serviceDuration: number): string[] {
   return slots;
 }
 
+// Helper function to convert time string to minutes
+function timeStringToMinutes(timeString: string): number {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -51,21 +57,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all appointments for that date
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    const appointmentDate = new Date(date);
     
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
     const appointments = await prisma.appointment.findMany({
       where: {
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        },
-        status: {
-          not: 'CANCELLED'
-        }
+        date: appointmentDate,
+        status: { in: ['pending', 'approved'] }
       },
       include: {
         service: true
@@ -73,18 +70,29 @@ export async function GET(request: NextRequest) {
     });
 
     // Generate all possible time slots
-    const allSlots = generateTimeSlots(new Date(date), service.duration);
+    const allSlots = generateTimeSlots(appointmentDate, service.duration);
 
-    // Filter out booked slots
-    const bookedSlots = appointments.map((apt: any) => {
-      const hours = apt.date.getHours().toString().padStart(2, '0');
-      const minutes = apt.date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
+    // Filter slots based on actual time conflicts with service duration
+    const availableSlots = allSlots.filter(slot => {
+      const slotStart = timeStringToMinutes(slot);
+      const slotEnd = slotStart + service.duration;
+
+      // Provjeri da li se slot preklapa sa bilo kojim postojećim appointmentom
+      const hasConflict = appointments.some((apt) => {
+        const aptStart = timeStringToMinutes(apt.time);
+        const aptEnd = aptStart + apt.service.duration;
+
+        // Provjeri preklapanje
+        return (slotStart < aptEnd && slotEnd > aptStart);
+      });
+
+      return !hasConflict;
     });
 
-    const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
-
-    return NextResponse.json({ availableSlots });
+    return NextResponse.json({ 
+      availableSlots,
+      serviceDuration: service.duration 
+    });
   } catch (error) {
     console.error('Error fetching availability:', error);
     return NextResponse.json(

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@nokti.com');
+  const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();

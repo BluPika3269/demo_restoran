@@ -17,6 +17,7 @@
     "install:server": "cd server && npm install"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "prisma": "^7.0.0"
   }
 }

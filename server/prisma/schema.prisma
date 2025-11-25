@@ -12,8 +12,9 @@ datasource db {
 
 model ServiceCategory {
   id          Int       @id @default(autoincrement())
-  name        String    // "Manikura", "Pedikura"
-  type        String    // "prirodni" ili "umjetni"
+  name        String
+  description String?
+  image       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

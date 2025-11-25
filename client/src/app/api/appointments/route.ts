@@ -22,6 +22,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper function to convert time string to minutes
+function timeStringToMinutes(timeString: string): number {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -45,10 +51,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get service to check duration
+    const service = await prisma.service.findUnique({
+      where: { id: parseInt(serviceId) }
+    });
+
+    if (!service) {
+      return NextResponse.json(
+        { error: 'Usluga nije pronađena' },
+        { status: 404 }
+      );
+    }
+
     // Create appointment date from date and time
     const [hours, minutes] = time.split(':').map(Number);
     const appointmentDate = new Date(date);
     appointmentDate.setHours(hours, minutes, 0, 0);
+
+    // Check for time conflicts - provjera preklapanja
+    const requestedStart = timeStringToMinutes(time);
+    const requestedEnd = requestedStart + service.duration;
+
+    const existingAppointments = await prisma.appointment.findMany({
+      where: {
+        date: appointmentDate,
+        status: { in: ['pending', 'approved'] }
+      },
+      include: {
+        service: true
+      }
+    });
+
+    // Provjera preklapanja
+    const hasConflict = existingAppointments.some((apt) => {
+      const aptStart = timeStringToMinutes(apt.time);
+      const aptEnd = aptStart + apt.service.duration;
+      
+      // Termini se preklapaju ako:
+      // - novi termin počinje prije kraja postojećeg I završava nakon početka postojećeg
+      return (requestedStart < aptEnd && requestedEnd > aptStart);
+    });
+
+    if (hasConflict) {
+      return NextResponse.json(
+        { error: 'Termin se preklapa s postojećim terminom. Molimo odaberite drugo vrijeme.' },
+        { status: 400 }
+      );
+    }
 
     const appointment = await prisma.appointment.create({
       data: {
@@ -61,7 +110,7 @@ export async function POST(request: NextRequest) {
         customerPhone,
         customerEmail,
         notes: notes || '',
-        status: 'PENDING'
+        status: 'pending'
       },
       include: {
         service: {

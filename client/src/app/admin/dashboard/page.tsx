@@ -106,6 +106,11 @@ export default function AdminDashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState<Appointment | null>(null);
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -124,7 +129,17 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`${API_URL}/admin/appointments`);
       const data = await response.json();
-      setAppointments(data);
+      // Sortiraj od najskijeg prema najranijem (najprije nadolazeći termini)
+      const sortedData = data.sort((a: Appointment, b: Appointment) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateA - dateB; // Prvo po datumu
+        // Ako je isti datum, sortiraj po vremenu
+        const [hoursA, minutesA] = a.time.split(':').map(Number);
+        const [hoursB, minutesB] = b.time.split(':').map(Number);
+        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
+      });
+      setAppointments(sortedData);
     } catch (error) {
       console.error('Error fetching appointments:', error);
     } finally {
@@ -153,6 +168,59 @@ export default function AdminDashboard() {
     setShowDeleteModal(true);
   };
 
+  const rescheduleAppointment = async (appointment: Appointment) => {
+    setAppointmentToReschedule(appointment);
+    setNewDate(appointment.date.split('T')[0]);
+    setNewTime(appointment.time);
+    setShowRescheduleModal(true);
+    // Fetch available slots for current date
+    fetchAvailableSlots(appointment.date.split('T')[0], appointment.serviceId);
+  };
+
+  const fetchAvailableSlots = async (date: string, serviceId: number) => {
+    try {
+      const response = await fetch(`${API_URL}/availability?date=${date}&serviceId=${serviceId}`);
+      const data = await response.json();
+      setAvailableSlots(data.availableSlots || []);
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      setAvailableSlots([]);
+    }
+  };
+
+  const confirmReschedule = async () => {
+    if (!appointmentToReschedule || !newDate || !newTime) return;
+
+    try {
+      const response = await fetch(`${API_URL}/admin/appointments/${appointmentToReschedule.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          date: newDate,
+          time: newTime
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Greška prilikom prebacivanja termina');
+        return;
+      }
+
+      fetchAppointments();
+      setShowRescheduleModal(false);
+      setAppointmentToReschedule(null);
+      setSelectedAppointment(null);
+      alert('Termin uspješno prebačen!');
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+      alert('Greška prilikom prebacivanja termina');
+    }
+  };
+
   const confirmDeleteAppointment = async () => {
     if (!appointmentToDelete) return;
 
@@ -170,14 +238,32 @@ export default function AdminDashboard() {
   };
 
   const getAppointmentsForDate = (date: Date) => {
-    return appointments.filter(apt => {
-      const aptDate = new Date(apt.date);
-      return isSameDay(aptDate, date);
-    });
+    return appointments
+      .filter(apt => {
+        const aptDate = new Date(apt.date);
+        return isSameDay(aptDate, date);
+      })
+      .sort((a, b) => {
+        // Sortiraj po vremenu (od najranijeg prema najkasnijem)
+        const [hoursA, minutesA] = a.time.split(':').map(Number);
+        const [hoursB, minutesB] = b.time.split(':').map(Number);
+        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
+      });
   };
 
   const getAppointmentsForToday = () => {
-    return getAppointmentsForDate(new Date());
+    const today = new Date();
+    return appointments
+      .filter(apt => {
+        const aptDate = new Date(apt.date);
+        return isSameDay(aptDate, today);
+      })
+      .sort((a, b) => {
+        // Sortiraj po vremenu (od najranijeg prema najkasnijem)
+        const [hoursA, minutesA] = a.time.split(':').map(Number);
+        const [hoursB, minutesB] = b.time.split(':').map(Number);
+        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
+      });
   };
 
   const getStatusColor = (status: Appointment['status']) => {
@@ -198,6 +284,31 @@ export default function AdminDashboard() {
       case 'cancelled': return 'Otkazan';
       default: return status;
     }
+  };
+
+  const isCurrentOrUpcoming = (appointment: Appointment) => {
+    const now = new Date();
+    const aptDate = new Date(appointment.date);
+    const [hours, minutes] = appointment.time.split(':').map(Number);
+    aptDate.setHours(hours, minutes, 0, 0);
+    
+    const endTime = new Date(aptDate.getTime() + (appointment.service?.duration || 60) * 60000);
+    
+    // Trenutni termin je onaj koji je u tijeku (između početka i kraja) I potvrđen
+    if (now >= aptDate && now <= endTime && appointment.status === 'approved') {
+      return 'current';
+    }
+    
+    // Nadolazeći termin - razlikuj pending i approved
+    if (now < aptDate) {
+      if (appointment.status === 'pending') {
+        return 'pending'; // Na čekanju - žuto
+      }
+      return 'upcoming'; // Potvrđen - zeleno
+    }
+    
+    // Prošli termin
+    return 'past';
   };
 
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
@@ -402,7 +513,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Selected Date Appointments */}
+                {/* Selected Date Appointments - Two Column Timeline Layout */}
                 <div className="mt-6">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                     Termini za {format(selectedDate, 'dd.MM.yyyy')}
@@ -412,34 +523,148 @@ export default function AdminDashboard() {
                       </span>
                     )}
                   </h3>
-                  <div className="space-y-3">
-                    {getAppointmentsForDate(selectedDate).map((appointment) => (
-                      <div
-                        key={appointment.id}
-                        className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                        onClick={() => setSelectedAppointment(appointment)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-white">
-                              {appointment.time} - {appointment.customerName}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {appointment.service?.name} ({appointment.service?.duration} min)
-                            </p>
+                  
+                  {(() => {
+                    const allApts = getAppointmentsForDate(selectedDate);
+                    const approvedApts = allApts.filter(apt => apt.status === 'approved' || apt.status === 'completed');
+                    const pendingApts = allApts.filter(apt => apt.status === 'pending');
+                    
+                    if (allApts.length === 0) {
+                      return (
+                        <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                          Nema termina za odabrani datum
+                        </p>
+                      );
+                    }
+                    
+                    // Get unique time slots that have appointments (approved or pending)
+                    const occupiedTimeSlots = new Set([
+                      ...approvedApts.map(apt => apt.time),
+                      ...pendingApts.map(apt => apt.time)
+                    ]);
+                    
+                    const timeSlots = Array.from(occupiedTimeSlots).sort();
+                    
+                    // Map appointments to time slots
+                    const approvedMap = new Map(approvedApts.map(apt => [apt.time, apt]));
+                    const pendingMap = new Map(pendingApts.map(apt => [apt.time, apt]));
+                    
+                    return (
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Left Column - Approved/Confirmed Appointments */}
+                        <div>
+                          <div className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Potvrđeni termini
                           </div>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
-                            {getStatusText(appointment.status)}
-                          </span>
+                          <div className="space-y-3">
+                            {timeSlots.map((timeSlot) => {
+                              const appointment = approvedMap.get(timeSlot);
+                              if (!appointment) {
+                                return (
+                                  <div key={timeSlot} className="h-24 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs">
+                                    {timeSlot} - Slobodno
+                                  </div>
+                                );
+                              }
+                              
+                              const timeStatus = isCurrentOrUpcoming(appointment);
+                              return (
+                                <div
+                                  key={appointment.id}
+                                  className={`rounded-lg p-4 cursor-pointer transition-all duration-500 ease-in-out h-24 appointment-slide-in ${
+                                    timeStatus === 'current' 
+                                      ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500 shadow-lg animate-pulse' 
+                                      : timeStatus === 'upcoming'
+                                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700'
+                                      : 'bg-gray-50 dark:bg-gray-700 opacity-60'
+                                  } hover:shadow-md hover:scale-[1.02]`}
+                                  onClick={() => setSelectedAppointment(appointment)}
+                                >
+                                  <div className="flex justify-between items-start h-full">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        {timeStatus === 'current' && (
+                                          <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                          </span>
+                                        )}
+                                        <p className={`font-semibold text-sm ${
+                                          timeStatus === 'current' 
+                                            ? 'text-blue-900 dark:text-blue-100' 
+                                            : 'text-gray-900 dark:text-white'
+                                        }`}>
+                                          {appointment.time} - {appointment.customerName}
+                                        </p>
+                                      </div>
+                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        {appointment.service?.name} ({appointment.service?.duration} min)
+                                      </p>
+                                      {timeStatus === 'current' && (
+                                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-medium">
+                                          🔴 U TIJEKU
+                                        </p>
+                                      )}
+                                    </div>
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
+                                      {getStatusText(appointment.status)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Right Column - Pending Appointments */}
+                        <div>
+                          <div className="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                            Na čekanju ({pendingApts.length})
+                          </div>
+                          <div className="space-y-3">
+                            {timeSlots.map((timeSlot) => {
+                              const appointment = pendingMap.get(timeSlot);
+                              if (!appointment) {
+                                return (
+                                  <div key={`pending-${timeSlot}`} className="h-24"></div>
+                                );
+                              }
+                              
+                              return (
+                                <div
+                                  key={appointment.id}
+                                  className="rounded-lg p-4 cursor-pointer transition-all duration-500 ease-in-out transform hover:scale-105 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 hover:shadow-lg h-24 appointment-slide-in"
+                                  onClick={() => setSelectedAppointment(appointment)}
+                                >
+                                  <div className="flex justify-between items-start h-full">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-yellow-500 text-base">⏳</span>
+                                        <p className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
+                                          {appointment.time} - {appointment.customerName}
+                                        </p>
+                                      </div>
+                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        {appointment.service?.name} ({appointment.service?.duration} min)
+                                      </p>
+                                      <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                                        → Čeka potvrdu
+                                      </p>
+                                    </div>
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
+                                      {getStatusText(appointment.status)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    ))}
-                    {getAppointmentsForDate(selectedDate).length === 0 && (
-                      <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                        Nema termina za odabrani datum
-                      </p>
-                    )}
-                  </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -452,27 +677,55 @@ export default function AdminDashboard() {
                   Današnji termini
                 </h2>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {getAppointmentsForToday().map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                      onClick={() => setSelectedAppointment(appointment)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white text-sm">
-                            {appointment.time}
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {appointment.customerName}
-                          </p>
+                  {getAppointmentsForToday().map((appointment) => {
+                    const timeStatus = isCurrentOrUpcoming(appointment);
+                    return (
+                      <div
+                        key={appointment.id}
+                        className={`rounded-lg p-3 cursor-pointer transition-all ${
+                          timeStatus === 'current' 
+                            ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500 animate-pulse' 
+                            : timeStatus === 'pending'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-600'
+                            : timeStatus === 'upcoming'
+                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700'
+                            : 'bg-gray-50 dark:bg-gray-700 opacity-60'
+                        } hover:shadow-md`}
+                        onClick={() => setSelectedAppointment(appointment)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              {timeStatus === 'current' && (
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                              )}
+                              {timeStatus === 'pending' && (
+                                <span className="text-yellow-500 text-xs">⏳</span>
+                              )}
+                              <p className={`font-medium text-sm ${
+                                timeStatus === 'current' 
+                                  ? 'text-blue-900 dark:text-blue-100 font-bold' 
+                                  : timeStatus === 'pending'
+                                  ? 'text-yellow-900 dark:text-yellow-100'
+                                  : 'text-gray-900 dark:text-white'
+                              }`}>
+                                {appointment.time}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              {appointment.customerName}
+                            </p>
+                          </div>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
+                            {getStatusText(appointment.status)}
+                          </span>
                         </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
-                          {getStatusText(appointment.status)}
-                        </span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {getAppointmentsForToday().length === 0 && (
                     <p className="text-gray-500 dark:text-gray-400 text-center py-4">
                       Nema termina danas
@@ -616,6 +869,15 @@ export default function AdminDashboard() {
                       </button>
                     )}
 
+                    {(selectedAppointment.status === 'pending' || selectedAppointment.status === 'approved') && (
+                      <button
+                        onClick={() => rescheduleAppointment(selectedAppointment)}
+                        className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                      >
+                        Prebaci termin
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         deleteAppointment(selectedAppointment.id);
@@ -669,6 +931,97 @@ export default function AdminDashboard() {
                       className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                     >
                       Obriši
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reschedule Modal */}
+          {showRescheduleModal && appointmentToReschedule && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Prebaci termin
+                    </h3>
+                    <button
+                      onClick={() => setShowRescheduleModal(false)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Prebacivanje termina za: <strong>{appointmentToReschedule.customerName}</strong>
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Usluga: <strong>{appointmentToReschedule.service?.name}</strong>
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Trenutni termin: <strong>{format(new Date(appointmentToReschedule.date), 'dd.MM.yyyy')} u {appointmentToReschedule.time}</strong>
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Novi datum
+                      </label>
+                      <input
+                        type="date"
+                        value={newDate}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => {
+                          setNewDate(e.target.value);
+                          fetchAvailableSlots(e.target.value, appointmentToReschedule.serviceId);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Novo vrijeme
+                      </label>
+                      {availableSlots.length > 0 ? (
+                        <select
+                          value={newTime}
+                          onChange={(e) => setNewTime(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="">Odaberi vrijeme</option>
+                          {availableSlots.map(slot => (
+                            <option key={slot} value={slot}>{slot}</option>
+                          ))}
+                        </select>
+                      ) : newDate ? (
+                        <p className="text-sm text-red-500">Nema slobodnih termina za odabrani datum</p>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Odaberi datum da vidiš slobodne termine</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => setShowRescheduleModal(false)}
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      Odustani
+                    </button>
+                    <button
+                      onClick={confirmReschedule}
+                      disabled={!newDate || !newTime}
+                      className="flex-1 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      Prebaci
                     </button>
                   </div>
                 </div>
