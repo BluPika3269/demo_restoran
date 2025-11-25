@@ -19,5 +19,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "prisma": "^7.0.0"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.2.0"
   }
 }
