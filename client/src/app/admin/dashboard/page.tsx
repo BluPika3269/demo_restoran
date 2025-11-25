@@ -536,7 +536,40 @@ export default function AdminDashboard() {
                     )}
                   </h3>
                   
-                  {(() => {
+                  {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Potvrđeni termini
+                        </div>
+                        <div className="space-y-3">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 min-h-[100px] animate-pulse">
+                              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+                              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                          Na čekanju
+                        </div>
+                        <div className="space-y-3">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="rounded-lg border-2 border-yellow-300 dark:border-yellow-600 p-4 min-h-[100px] animate-pulse bg-yellow-50 dark:bg-yellow-900/20">
+                              <div className="h-4 bg-yellow-200 dark:bg-yellow-700 rounded w-1/3 mb-2"></div>
+                              <div className="h-3 bg-yellow-200 dark:bg-yellow-700 rounded w-1/2 mb-2"></div>
+                              <div className="h-3 bg-yellow-200 dark:bg-yellow-700 rounded w-2/3"></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (() => {
                     const allApts = getAppointmentsForDate(selectedDate);
                     const approvedApts = allApts.filter(apt => apt.status === 'approved' || apt.status === 'completed');
                     const pendingApts = allApts.filter(apt => apt.status === 'pending');
@@ -697,7 +730,20 @@ export default function AdminDashboard() {
                   Današnji termini
                 </h2>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {getAppointmentsForToday().map((appointment) => {
+                  {loading ? (
+                    <>
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 animate-pulse">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                          </div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                        </div>
+                      ))}
+                    </>
+                  ) : getAppointmentsForToday().map((appointment) => {
                     const timeStatus = isCurrentOrUpcoming(appointment);
                     return (
                       <div
@@ -746,7 +792,7 @@ export default function AdminDashboard() {
                       </div>
                     );
                   })}
-                  {getAppointmentsForToday().length === 0 && (
+                  {!loading && getAppointmentsForToday().length === 0 && (
                     <p className="text-gray-500 dark:text-gray-400 text-center py-4">
                       Nema termina danas
                     </p>
