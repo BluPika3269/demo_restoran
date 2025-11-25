@@ -80,9 +80,9 @@ git push origin master
 
 echo.
 echo [4/4] Deploy na Vercel produkciju...
-cd client
 echo Pokrecem Vercel deployment...
-vercel --prod --yes --force
+cd client
+vercel --prod --yes
 cd ..
 
 echo.
