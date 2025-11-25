@@ -12,3 +12,6 @@ cd "e:\Damii\Posao\PRIVATNO\Web stranice\Nokti\client"; npm run dev
 cd "e:\Damii\Posao\PRIVATNO\Web stranice\Nokti\server"; npm run dev
 
 NEON: psql 'postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
+ POKRETANJE SKRIPTE U TERMINALU ZA DEPLOYMENT BACKENDAI FRONTENDA:
+  .\deploy-all.bat

@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const date = searchParams.get('date');
     const serviceId = searchParams.get('serviceId');
+    const excludeAppointmentId = searchParams.get('excludeAppointmentId');
 
     if (!date || !serviceId) {
       return NextResponse.json(
@@ -69,7 +70,8 @@ export async function GET(request: NextRequest) {
           gte: startOfDay,
           lte: endOfDay
         },
-        status: { in: ['pending', 'approved'] }
+        status: { in: ['pending', 'approved'] },
+        ...(excludeAppointmentId && { id: { not: parseInt(excludeAppointmentId) } })
       },
       include: {
         service: true
@@ -81,10 +83,20 @@ export async function GET(request: NextRequest) {
     // Generate all possible time slots
     const allSlots = generateTimeSlots(startOfDay, service.duration);
 
+    // Get current time
+    const now = new Date();
+    const isToday = startOfDay.toDateString() === now.toDateString();
+    const currentMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+
     // Filter slots based on actual time conflicts with service duration
     const availableSlots = allSlots.filter(slot => {
       const slotStart = timeStringToMinutes(slot);
       const slotEnd = slotStart + service.duration;
+
+      // Provjeri da li je slot u prošlosti (samo za današnji dan)
+      if (isToday && slotEnd <= currentMinutes) {
+        return false;
+      }
 
       // Provjeri da li se slot preklapa sa bilo kojim postojećim appointmentom
       const hasConflict = appointments.some((apt) => {

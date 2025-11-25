@@ -177,9 +177,12 @@ export default function AdminDashboard() {
     fetchAvailableSlots(appointment.date.split('T')[0], appointment.serviceId);
   };
 
-  const fetchAvailableSlots = async (date: string, serviceId: number) => {
+  const fetchAvailableSlots = async (date: string, serviceId: number, excludeAppointmentId?: number) => {
     try {
-      const response = await fetch(`${API_URL}/availability?date=${date}&serviceId=${serviceId}`);
+      const url = excludeAppointmentId 
+        ? `${API_URL}/availability?date=${date}&serviceId=${serviceId}&excludeAppointmentId=${excludeAppointmentId}`
+        : `${API_URL}/availability?date=${date}&serviceId=${serviceId}`;
+      const response = await fetch(url);
       const data = await response.json();
       setAvailableSlots(data.availableSlots || []);
     } catch (error) {
@@ -314,17 +317,25 @@ export default function AdminDashboard() {
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
       const dayAppointments = getAppointmentsForDate(date);
+      const approvedCount = dayAppointments.filter(a => a.status === 'approved' || a.status === 'completed').length;
+      const pendingCount = dayAppointments.filter(a => a.status === 'pending').length;
       const holiday = isHoliday(date);
       
       return (
         <div className="flex flex-col items-center justify-start mt-1 h-10">
-          {dayAppointments.length > 0 ? (
-            <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-              {dayAppointments.length}
-            </div>
-          ) : (
-            <div className="h-5"></div>
-          )}
+          <div className="flex items-center gap-1">
+            {approvedCount > 0 && (
+              <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                {approvedCount}
+              </div>
+            )}
+            {pendingCount > 0 && (
+              <div className="w-5 h-5 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                {pendingCount}
+              </div>
+            )}
+            {dayAppointments.length === 0 && <div className="h-5"></div>}
+          </div>
           {holiday && (
             <div className="w-2 h-2 bg-red-500 rounded-full mt-1" title={getHolidayName(date)}></div>
           )}
@@ -508,12 +519,24 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Legend */}
-                <div className="mt-4 flex items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-pink-500 rounded flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">27</span>
+                    </div>
+                    <span>Odabrani datum</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                       3
                     </div>
-                    <span>Broj termina</span>
+                    <span>Potvrđeni termini</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      2
+                    </div>
+                    <span>Na čekanju</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -829,7 +852,7 @@ export default function AdminDashboard() {
 
           {/* Appointment Details Modal */}
           {selectedAppointment && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -897,6 +920,77 @@ export default function AdminDashboard() {
                         {getStatusText(selectedAppointment.status)}
                       </span>
                     </div>
+
+                    {selectedAppointment.status === 'pending' && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                          Pregled termina u kalendaru
+                        </label>
+                        <div className="w-full flex justify-center">
+                          <div className="calendar-container">
+                            <Calendar
+                              value={new Date(selectedAppointment.date)}
+                              tileClassName={({ date }) => {
+                                const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
+                                const holiday = isHoliday(date);
+                                const isSelectedDate = date.toDateString() === new Date(selectedAppointment.date).toDateString();
+                                let classes = '';
+                                if (holiday) classes += 'react-calendar__tile--holiday ';
+                                if (isPastDate) classes += 'react-calendar__tile--past ';
+                                if (isSelectedDate) classes += 'react-calendar__tile--active ';
+                                return classes.trim();
+                              }}
+                              tileContent={({ date, view }) => {
+                                if (view === 'month') {
+                                  const appts = getAppointmentsForDate(date);
+                                  const approvedCount = appts.filter(a => a.status === 'approved' || a.status === 'completed').length;
+                                  const pendingCount = appts.filter(a => a.status === 'pending').length;
+                                  return (
+                                    <div style={{ marginTop: '4px' }}>
+                                      {approvedCount > 0 && (
+                                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
+                                          {approvedCount}
+                                        </span>
+                                      )}
+                                      {pendingCount > 0 && (
+                                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-yellow-500 rounded-full ml-1">
+                                          {pendingCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                              className="border rounded shadow"
+                              locale="hr-HR"
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Legend */}
+                        <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 bg-pink-500 rounded flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold">27</span>
+                            </div>
+                            <span>Ovaj termin</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-4 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                              3
+                            </div>
+                            <span>Potvrđeni</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-4 bg-yellow-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                              2
+                            </div>
+                            <span>Na čekanju</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 mt-6">
@@ -960,7 +1054,7 @@ export default function AdminDashboard() {
           )}
 
           {showDeleteModal && appointmentToDelete && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full">
                 <div className="p-6">
                   <div className="flex items-center mb-4">
@@ -1006,8 +1100,8 @@ export default function AdminDashboard() {
 
           {/* Reschedule Modal */}
           {showRescheduleModal && appointmentToReschedule && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -1040,16 +1134,83 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Novi datum
                       </label>
-                      <input
-                        type="date"
-                        value={newDate}
-                        min={new Date().toISOString().split('T')[0]}
-                        onChange={(e) => {
-                          setNewDate(e.target.value);
-                          fetchAvailableSlots(e.target.value, appointmentToReschedule.serviceId);
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
-                      />
+                      <div className="w-full flex justify-center">
+                        <div className="calendar-container">
+                          <Calendar
+                            onChange={(value) => {
+                              if (value instanceof Date) {
+                                const dateStr = value.toISOString().split('T')[0];
+                                setNewDate(dateStr);
+                                fetchAvailableSlots(dateStr, appointmentToReschedule.serviceId, appointmentToReschedule.id);
+                              }
+                            }}
+                            value={newDate ? new Date(newDate) : new Date()}
+                            minDate={new Date()}
+                            tileClassName={({ date }) => {
+                              const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
+                              const holiday = isHoliday(date);
+                              let classes = '';
+                              if (holiday) classes += 'react-calendar__tile--holiday ';
+                              if (isPastDate) classes += 'react-calendar__tile--past ';
+                              return classes.trim();
+                            }}
+                            tileContent={({ date, view }) => {
+                              if (view === 'month') {
+                                const appts = getAppointmentsForDate(date);
+                                const approvedCount = appts.filter(a => a.status === 'approved' || a.status === 'completed').length;
+                                const pendingCount = appts.filter(a => a.status === 'pending').length;
+                                return (
+                                  <div style={{ marginTop: '4px' }}>
+                                    {approvedCount > 0 && (
+                                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
+                                        {approvedCount}
+                                      </span>
+                                    )}
+                                    {pendingCount > 0 && (
+                                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-yellow-500 rounded-full ml-1">
+                                        {pendingCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                            className="border rounded shadow"
+                            locale="hr-HR"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Legend */}
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-pink-500 rounded flex items-center justify-center">
+                            <span className="text-white text-[10px] font-bold">27</span>
+                          </div>
+                          <span>Odabrani datum</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                            3
+                          </div>
+                          <span>Potvrđeni termini</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 bg-yellow-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                            2
+                          </div>
+                          <span>Na čekanju</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <span>Praznik</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="line-through opacity-50">15</span>
+                          <span>Prošli datum</span>
+                        </div>
+                      </div>
                     </div>
 
                     <div>

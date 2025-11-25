@@ -30,15 +30,16 @@ export default function Navigation() {
             </button>
           </div>
 
-          <motion.div
-            className="flex items-center space-x-2 md:order-1 text-center md:text-left w-full md:w-auto justify-center md:justify-start"
+          <motion.a
+            href="/"
+            className="flex items-center space-x-2 md:order-1 text-center md:text-left w-full md:w-auto justify-center md:justify-start cursor-pointer hover:opacity-80 transition-opacity duration-300"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
             <Sparkles className="w-8 h-8 text-yellow-400" />
             <span className="text-xl font-bold text-gray-900 dark:text-white">Bliss Nails</span>
-          </motion.div>
+          </motion.a>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-8 order-2">
