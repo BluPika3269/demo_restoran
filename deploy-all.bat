@@ -81,7 +81,7 @@ git push origin master
 echo.
 echo [4/5] Postavljam DATABASE_URL na Vercelu...
 cd client
-echo postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require | call vercel env add DATABASE_URL production --force
+echo postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require^&connection_limit=1^&pool_timeout=0 | call vercel env add DATABASE_URL production --force
 
 echo.
 echo [5/5] Deploy na Vercel produkciju...

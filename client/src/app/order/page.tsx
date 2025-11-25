@@ -113,8 +113,8 @@ export default function OrderPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    fetchCategories();
-    fetchAppointments();
+    // Load categories and appointments in parallel
+    Promise.all([fetchCategories(), fetchAppointments()]);
   }, []);
 
   const fetchCategories = async () => {
@@ -123,6 +123,7 @@ export default function OrderPage() {
       setCategories(response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]); // Set empty array on error so UI can render
     }
   };
 
@@ -330,18 +331,29 @@ export default function OrderPage() {
               
               {!selectedCategory && (
                 <div className="px-6 pb-6 animate-slide-down">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {categories.map((category) => (
-                      <button 
-                        key={category.id} 
-                        onClick={() => handleCategorySelect(category)} 
-                        className="p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-pink-500 hover:shadow-lg transition-all text-left transform hover:scale-105"
-                      >
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{category.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{category.services.length} usluga</p>
-                      </button>
-                    ))}
-                  </div>
+                  {categories.length === 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg animate-pulse">
+                          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {categories.map((category) => (
+                        <button 
+                          key={category.id} 
+                          onClick={() => handleCategorySelect(category)} 
+                          className="p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-pink-500 hover:shadow-lg transition-all text-left transform hover:scale-105"
+                        >
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{category.name}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{category.services.length} usluga</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
