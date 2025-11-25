@@ -1,13 +1,14 @@
 @echo off
 chcp 65001 >nul
+setlocal enabledelayedexpansion
 echo ====================================
 echo   DEPLOYMENT SKRIPTA
 echo ====================================
 echo.
 echo Pokretanje skripte:
-echo   .\deploy-all.bat
+echo   deploy-all.bat
 echo.
-echo Ova skripta će:
+echo Ova skripta ce:
 echo   - Sinkronizirati lokalnu bazu na Neon
 echo   - Commit i push na GitHub
 echo   - Deploy na Vercel produkciju
@@ -23,16 +24,17 @@ echo ====================================
 echo.
 echo Odaberi akciju za bazu:
 echo [1] Uploadaj lokalne podatke na Neon (dodaj podatke)
-echo [2] Resetiraj Neon bazu + uploadaj podatke (BRIŠE SVE!)
-echo [3] Preskoči sinkronizaciju baze
+echo [2] Resetiraj Neon bazu + uploadaj podatke (BRISE SVE!)
+echo [3] Preskoci sinkronizaciju baze
 echo.
-set /p "db_choice=Upiši izbor (1/2/3): "
+choice /C 123 /N /M "Upisi izbor (1/2/3): "
+set db_choice=%ERRORLEVEL%
 
 if "%db_choice%"=="1" (
     echo.
     echo Sinkroniziram lokalnu bazu na Neon...
     cd server
-    set DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
+    set "DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     call npx tsx prisma/seed.ts
     cd ..
     echo Baza sinkronizirana!
@@ -40,24 +42,17 @@ if "%db_choice%"=="1" (
 
 if "%db_choice%"=="2" (
     echo.
-    echo UPOZORENJE: Ovo će OBRISATI SVE podatke na Neon bazi!
-    set /p "confirm=Upiši DA za potvrdu: "
-    if /i "%confirm%"=="DA" (
-        echo.
-        echo Resetiram Neon bazu...
-        cd server
-        set DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
-        call npx prisma migrate reset --force
-        call npx tsx prisma/seed.ts
-        cd ..
-        echo Baza resetirana i napunjena podacima!
-    ) else (
-        echo Reset baze otkazan.
-    )
+    echo Resetiram Neon bazu...
+    cd server
+    set "DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+    call npx prisma migrate reset --force
+    call npx tsx prisma/seed.ts
+    cd ..
+    echo Baza resetirana i napunjena podacima!
 )
 
 if "%db_choice%"=="3" (
-    echo Preskačem sinkronizaciju baze...
+    echo Preskacem sinkronizaciju baze...
 )
 
 echo.
@@ -71,9 +66,9 @@ git add .
 
 echo.
 echo [2/4] Git commit...
-set /p "commit_msg=Upiši poruku commita (ili Enter za default): "
-if "%commit_msg%"=="" set "commit_msg=Update deployment"
-git commit -m "%commit_msg%"
+set /p "commit_msg=Upisi poruku commita (ili Enter za default): "
+if "!commit_msg!"=="" set "commit_msg=Update deployment"
+git commit -m "!commit_msg!"
 
 echo.
 echo [3/4] Git push na GitHub...
