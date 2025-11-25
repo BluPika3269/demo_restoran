@@ -80,12 +80,8 @@ git push origin master
 
 echo.
 echo [4/4] Deploy na Vercel produkciju...
-cd client
-if exist .vercel (
-    echo Brišem stari Vercel config...
-    rmdir /s /q .vercel
-)
 echo Pokrecem Vercel deployment...
+cd client
 vercel --prod --yes
 cd ..
 
