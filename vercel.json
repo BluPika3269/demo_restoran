@@ -2,10 +2,5 @@
   "buildCommand": "cd client && npx prisma generate && npm run build",
   "outputDirectory": "client/.next",
   "installCommand": "cd client && npm install",
-  "framework": "nextjs",
-  "functions": {
-    "client/src/app/api/**/*.ts": {
-      "maxDuration": 10
-    }
-  }
+  "framework": "nextjs"
 }
