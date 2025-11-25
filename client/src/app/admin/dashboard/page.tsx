@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, isToday, isSameDay } from 'date-fns';
+import { hr } from 'date-fns/locale';
 import Navigation from '@/components/Navigation';
 
 const API_URL = '/api';
@@ -102,6 +103,7 @@ interface Appointment {
 export default function AdminDashboard() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [activeStartDate, setActiveStartDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -111,6 +113,8 @@ export default function AdminDashboard() {
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -217,7 +221,9 @@ export default function AdminDashboard() {
       setShowRescheduleModal(false);
       setAppointmentToReschedule(null);
       setSelectedAppointment(null);
-      alert('Termin uspješno prebačen!');
+      setSuccessMessage('Termin uspješno prebačen!');
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (error) {
       console.error('Error rescheduling appointment:', error);
       alert('Greška prilikom prebacivanja termina');
@@ -322,7 +328,10 @@ export default function AdminDashboard() {
       const holiday = isHoliday(date);
       
       return (
-        <div className="flex flex-col items-center justify-start mt-1 h-10">
+        <div className="flex flex-col items-center justify-start h-10">
+          {holiday && (
+            <div className="w-2 h-2 bg-red-500 rounded-full mb-1" title={getHolidayName(date)}></div>
+          )}
           <div className="flex items-center gap-1">
             {approvedCount > 0 && (
               <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
@@ -334,11 +343,7 @@ export default function AdminDashboard() {
                 {pendingCount}
               </div>
             )}
-            {dayAppointments.length === 0 && <div className="h-5"></div>}
           </div>
-          {holiday && (
-            <div className="w-2 h-2 bg-red-500 rounded-full mt-1" title={getHolidayName(date)}></div>
-          )}
         </div>
       );
     }
@@ -348,6 +353,15 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('adminLoggedIn');
     router.push('/');
+  };
+
+  // Croatian locale formatters for react-calendar
+  const formatShortWeekday = (locale: string | undefined, date: Date) => {
+    return format(date, 'EEEEEE', { locale: hr }); // Po, Ut, Sr, Če, Pe, Su, Ne
+  };
+
+  const formatMonthYear = (locale: string | undefined, date: Date) => {
+    return format(date, 'LLLL yyyy.', { locale: hr }); // siječanj 2025.
   };
 
   return (
@@ -430,19 +444,29 @@ export default function AdminDashboard() {
         .dark .calendar-container .react-calendar__tile--holiday {
           background: rgba(239, 68, 68, 0.2);
         }
-        .calendar-container .react-calendar__tile--past {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
-        .dark .calendar-container .react-calendar__tile--past {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
         .calendar-container .react-calendar__tile--other-month {
-          color: rgb(156 163 175);
+          opacity: 0.35 !important;
+          color: rgb(156 163 175) !important;
         }
         .dark .calendar-container .react-calendar__tile--other-month {
-          color: rgb(107 114 128);
+          opacity: 0.35 !important;
+          color: rgb(107 114 128) !important;
+        }
+        .calendar-container .react-calendar__tile--past:not(.react-calendar__tile--other-month) {
+          text-decoration: line-through;
+          opacity: 0.5;
+        }
+        .dark .calendar-container .react-calendar__tile--past:not(.react-calendar__tile--other-month) {
+          text-decoration: line-through;
+          opacity: 0.5;
+        }
+        .calendar-container .react-calendar__tile--past.react-calendar__tile--other-month {
+          text-decoration: line-through;
+          opacity: 0.25 !important;
+        }
+        .dark .calendar-container .react-calendar__tile--past.react-calendar__tile--other-month {
+          text-decoration: line-through;
+          opacity: 0.25 !important;
         }
       `}</style>
       <div className="pt-24 py-12">
@@ -471,26 +495,28 @@ export default function AdminDashboard() {
                     <button
                       onClick={fetchAppointments}
                       disabled={loading}
-                      className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2"
+                      className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm flex items-center gap-1 sm:gap-2"
                     >
                       {loading ? (
-                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       ) : (
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                       )}
-                      {loading ? 'Osvježavanje...' : 'Osvježi'}
+                      <span className="hidden sm:inline">{loading ? 'Osvježavanje...' : 'Osvježi'}</span>
+                      <span className="inline sm:hidden">{loading ? 'Učitavanje...' : 'Osvježi'}</span>
                     </button>
                     {!isToday(selectedDate) && (
                       <button
                         onClick={() => setSelectedDate(new Date())}
-                        className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm whitespace-nowrap"
                       >
-                        Današnji datum
+                        <span className="hidden sm:inline">Današnji datum</span>
+                        <span className="inline sm:hidden">Danas</span>
                       </button>
                     )}
                   </div>
@@ -499,12 +525,18 @@ export default function AdminDashboard() {
                 <div className="flex justify-center">
                   <div className="calendar-container">
                     <Calendar
-                      key={selectedDate.toISOString()}
                       onChange={(value) => setSelectedDate(value as Date)}
                       value={selectedDate}
+                      activeStartDate={activeStartDate}
+                      onActiveStartDateChange={({ activeStartDate }) => {
+                        if (activeStartDate) setActiveStartDate(activeStartDate);
+                      }}
+                      showDoubleView={false}
+                      prev2Label={null}
+                      next2Label={null}
                       tileContent={tileContent}
                       tileClassName={({ date }) => {
-                        const isCurrentMonth = date.getMonth() === selectedDate.getMonth() && date.getFullYear() === selectedDate.getFullYear();
+                        const isCurrentMonth = date.getMonth() === activeStartDate.getMonth() && date.getFullYear() === activeStartDate.getFullYear();
                         const holiday = isHoliday(date);
                         const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
                         let classes = '';
@@ -513,38 +545,41 @@ export default function AdminDashboard() {
                         if (isPastDate) classes += 'react-calendar__tile--past ';
                         return classes.trim();
                       }}
+                      formatShortWeekday={formatShortWeekday}
+                      formatMonthYear={formatMonthYear}
+                      locale="hr-HR"
                       className="border rounded shadow"
                     />
                   </div>
                 </div>
 
                 {/* Legend */}
-                <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-pink-500 rounded flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">27</span>
+                <div className="mt-4 px-2 flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 rounded flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-[10px] sm:text-xs font-bold">27</span>
                     </div>
-                    <span>Odabrani datum</span>
+                    <span className="whitespace-nowrap">Odabrani datum</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold flex-shrink-0">
                       3
                     </div>
-                    <span>Potvrđeni termini</span>
+                    <span className="whitespace-nowrap">Potvrđeni termini</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold flex-shrink-0">
                       2
                     </div>
-                    <span>Na čekanju</span>
+                    <span className="whitespace-nowrap">Na čekanju</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>Praznik</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
+                    <span className="whitespace-nowrap">Praznik</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <span className="line-through opacity-50">15</span>
-                    <span>Prošli datum</span>
+                    <span className="whitespace-nowrap">Prošli datum</span>
                   </div>
                 </div>
 
@@ -853,7 +888,7 @@ export default function AdminDashboard() {
           {/* Appointment Details Modal */}
           {selectedAppointment && (
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -962,8 +997,10 @@ export default function AdminDashboard() {
                                 }
                                 return null;
                               }}
-                              className="border rounded shadow"
+                              formatShortWeekday={formatShortWeekday}
+                              formatMonthYear={formatMonthYear}
                               locale="hr-HR"
+                              className="border rounded shadow"
                             />
                           </div>
                         </div>
@@ -988,64 +1025,101 @@ export default function AdminDashboard() {
                             </div>
                             <span>Na čekanju</span>
                           </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span>Praznik</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="line-through opacity-50">15</span>
+                            <span>Prošli datum</span>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-2 mt-6">
+                  <div className="flex flex-col sm:flex-row gap-2 mt-6">
                     {selectedAppointment.status === 'pending' && (
                       <>
-                        <button
-                          onClick={() => {
-                            updateAppointmentStatus(selectedAppointment.id, 'approved');
-                            setSelectedAppointment(null);
-                          }}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                        >
-                          Potvrdi
-                        </button>
-                        <button
-                          onClick={() => {
-                            updateAppointmentStatus(selectedAppointment.id, 'cancelled');
-                            setSelectedAppointment(null);
-                          }}
-                          className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                        >
-                          Odbij
-                        </button>
+                        {/* First row on mobile - Potvrdi i Odbij */}
+                        <div className="flex gap-2 w-full">
+                          <button
+                            onClick={() => {
+                              updateAppointmentStatus(selectedAppointment.id, 'approved');
+                              setSelectedAppointment(null);
+                            }}
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                          >
+                            Potvrdi
+                          </button>
+                          <button
+                            onClick={() => {
+                              updateAppointmentStatus(selectedAppointment.id, 'cancelled');
+                              setSelectedAppointment(null);
+                            }}
+                            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                          >
+                            Odbij
+                          </button>
+                        </div>
+                        {/* Second row on mobile - Prebaci i Obriši */}
+                        <div className="flex gap-2 w-full">
+                          <button
+                            onClick={() => rescheduleAppointment(selectedAppointment)}
+                            className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                          >
+                            Prebaci termin
+                          </button>
+                          <button
+                            onClick={() => {
+                              deleteAppointment(selectedAppointment.id);
+                              setSelectedAppointment(null);
+                            }}
+                            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                          >
+                            Obriši
+                          </button>
+                        </div>
                       </>
                     )}
 
                     {selectedAppointment.status === 'approved' && (
-                      <button
-                        onClick={() => {
-                          updateAppointmentStatus(selectedAppointment.id, 'completed');
-                          setSelectedAppointment(null);
-                        }}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                      >
-                        Označi kao završeno
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            updateAppointmentStatus(selectedAppointment.id, 'completed');
+                            setSelectedAppointment(null);
+                          }}
+                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                        >
+                          Označi kao završeno
+                        </button>
+                        <button
+                          onClick={() => rescheduleAppointment(selectedAppointment)}
+                          className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                        >
+                          Prebaci termin
+                        </button>
+                        <button
+                          onClick={() => {
+                            deleteAppointment(selectedAppointment.id);
+                            setSelectedAppointment(null);
+                          }}
+                          className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                        >
+                          Obriši
+                        </button>
+                      </>
                     )}
+                  </div>
 
-                    {(selectedAppointment.status === 'pending' || selectedAppointment.status === 'approved') && (
-                      <button
-                        onClick={() => rescheduleAppointment(selectedAppointment)}
-                        className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                      >
-                        Prebaci termin
-                      </button>
-                    )}
-
+                  {/* Zatvori button */}
+                  <div className="mt-3">
                     <button
-                      onClick={() => {
-                        deleteAppointment(selectedAppointment.id);
-                        setSelectedAppointment(null);
-                      }}
-                      className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                      onClick={() => setSelectedAppointment(null)}
+                      className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
                     >
-                      Obriši
+                      Zatvori
                     </button>
                   </div>
                 </div>
@@ -1100,31 +1174,31 @@ export default function AdminDashboard() {
 
           {/* Reschedule Modal */}
           {showRescheduleModal && appointmentToReschedule && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full">
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full my-4 max-h-[95vh] overflow-y-auto">
+                <div className="p-4 sm:p-6">
+                  <div className="flex justify-between items-start mb-3 sm:mb-4">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                       Prebaci termin
                     </h3>
                     <button
                       onClick={() => setShowRescheduleModal(false)}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
                     >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </div>
 
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <div className="mb-3 sm:mb-4 space-y-2">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Prebacivanje termina za: <strong>{appointmentToReschedule.customerName}</strong>
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Usluga: <strong>{appointmentToReschedule.service?.name}</strong>
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Trenutni termin: <strong>{format(new Date(appointmentToReschedule.date), 'dd.MM.yyyy')} u {appointmentToReschedule.time}</strong>
                     </p>
                   </div>
@@ -1134,22 +1208,34 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Novi datum
                       </label>
-                      <div className="w-full flex justify-center">
-                        <div className="calendar-container">
+                      <div className="w-full flex justify-center overflow-x-auto">
+                        <div className="calendar-container w-full">
                           <Calendar
                             onChange={(value) => {
                               if (value instanceof Date) {
-                                const dateStr = value.toISOString().split('T')[0];
+                                const year = value.getFullYear();
+                                const month = String(value.getMonth() + 1).padStart(2, '0');
+                                const day = String(value.getDate()).padStart(2, '0');
+                                const dateStr = `${year}-${month}-${day}`;
                                 setNewDate(dateStr);
                                 fetchAvailableSlots(dateStr, appointmentToReschedule.serviceId, appointmentToReschedule.id);
                               }
                             }}
-                            value={newDate ? new Date(newDate) : new Date()}
+                            value={newDate ? new Date(newDate + 'T12:00:00') : new Date()}
                             minDate={new Date()}
+                            activeStartDate={activeStartDate}
+                            onActiveStartDateChange={({ activeStartDate }) => {
+                              if (activeStartDate) setActiveStartDate(activeStartDate);
+                            }}
+                            showDoubleView={false}
+                            prev2Label={null}
+                            next2Label={null}
                             tileClassName={({ date }) => {
+                              const isCurrentMonth = date.getMonth() === activeStartDate.getMonth() && date.getFullYear() === activeStartDate.getFullYear();
                               const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
                               const holiday = isHoliday(date);
                               let classes = '';
+                              if (!isCurrentMonth) classes += 'react-calendar__tile--other-month ';
                               if (holiday) classes += 'react-calendar__tile--holiday ';
                               if (isPastDate) classes += 'react-calendar__tile--past ';
                               return classes.trim();
@@ -1159,56 +1245,64 @@ export default function AdminDashboard() {
                                 const appts = getAppointmentsForDate(date);
                                 const approvedCount = appts.filter(a => a.status === 'approved' || a.status === 'completed').length;
                                 const pendingCount = appts.filter(a => a.status === 'pending').length;
+                                const holiday = isHoliday(date);
                                 return (
-                                  <div style={{ marginTop: '4px' }}>
-                                    {approvedCount > 0 && (
-                                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
-                                        {approvedCount}
-                                      </span>
+                                  <div className="flex flex-col items-center justify-start h-10">
+                                    {holiday && (
+                                      <div className="w-2 h-2 bg-red-500 rounded-full mb-1" title={getHolidayName(date)}></div>
                                     )}
-                                    {pendingCount > 0 && (
-                                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-yellow-500 rounded-full ml-1">
-                                        {pendingCount}
-                                      </span>
-                                    )}
+                                    <div className="flex items-center gap-1">
+                                      {approvedCount > 0 && (
+                                        <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                          {approvedCount}
+                                        </div>
+                                      )}
+                                      {pendingCount > 0 && (
+                                        <div className="w-5 h-5 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                          {pendingCount}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               }
                               return null;
                             }}
-                            className="border rounded shadow"
+                            formatShortWeekday={formatShortWeekday}
+                            formatMonthYear={formatMonthYear}
                             locale="hr-HR"
+                            className="border rounded shadow"
                           />
                         </div>
                       </div>
                       
                       {/* Legend */}
-                      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-pink-500 rounded flex items-center justify-center">
-                            <span className="text-white text-[10px] font-bold">27</span>
+                      <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 rounded flex items-center justify-center">
+                            <span className="text-white text-[8px] sm:text-[10px] font-bold">27</span>
                           </div>
-                          <span>Odabrani datum</span>
+                          <span className="whitespace-nowrap">Odabrani</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-bold">
                             3
                           </div>
-                          <span>Potvrđeni termini</span>
+                          <span className="whitespace-nowrap">Potvrđeni</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 bg-yellow-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-yellow-500 text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-bold">
                             2
                           </div>
-                          <span>Na čekanju</span>
+                          <span className="whitespace-nowrap">Čekanju</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span>Praznik</span>
+                          <span className="whitespace-nowrap">Praznik</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           <span className="line-through opacity-50">15</span>
-                          <span>Prošli datum</span>
+                          <span className="whitespace-nowrap">Prošli</span>
                         </div>
                       </div>
                     </div>
@@ -1236,21 +1330,50 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 mt-6">
+                  <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
                     <button
                       onClick={() => setShowRescheduleModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
                     >
                       Odustani
                     </button>
                     <button
                       onClick={confirmReschedule}
                       disabled={!newDate || !newTime}
-                      className="flex-1 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                      className="flex-1 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
                     >
                       Prebaci
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Modal */}
+          {showSuccessModal && (
+            <div className="fixed inset-0 flex items-center justify-center p-4 z-[60] pointer-events-none">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full pointer-events-auto transform animate-bounce-in border-2 border-green-500">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Uspjeh!</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{successMessage}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowSuccessModal(false)}
+                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
