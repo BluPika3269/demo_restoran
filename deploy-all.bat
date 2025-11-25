@@ -79,27 +79,28 @@ echo [3/4] Git push na GitHub...
 git push origin master
 
 echo.
-echo [4/5] Postavljam DATABASE_URL na Vercelu...
+echo [4/5] Povezujem projekt sa Vercelom...
 cd client
+echo Linkujem projekt...
+vercel link --yes
+
+echo.
+echo [5/5] Postavljam DATABASE_URL...
 echo postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require^&connection_limit=1^&pool_timeout=0 > .env.temp
 vercel env add DATABASE_URL production --force < .env.temp
 del .env.temp
 
 echo.
-echo [5/5] Deploy na Vercel produkciju...
-echo Povezujem se sa Vercel projektom...
-vercel link --yes
-echo.
-echo Pokrecem deployment...
+echo [6/6] Deploy na Vercel produkciju...
 vercel --prod --yes
 cd ..
 
 echo.
 echo ====================================
-echo   USPJEŠNO!
+echo   USPJESNO!
 echo ====================================
 echo.
-echo Frontend + Backend deployani!
+echo Frontend deployovan!
 echo Baza sinkronizirana na Neon!
 echo Provjeri aplikaciju na Vercel dashboardu
 echo.
