@@ -1,13 +1,6 @@
 {
-  "version": 2,
-  "buildCommand": "npx prisma generate && npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ]
+  "buildCommand": "cd client && npx prisma generate && npm run build",
+  "outputDirectory": "client/.next",
+  "installCommand": "cd client && npm install",
+  "framework": "nextjs"
 }
