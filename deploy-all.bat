@@ -79,26 +79,10 @@ echo [3/4] Git push na GitHub...
 git push origin master
 
 echo.
-echo [4/5] Povezujem projekt sa Vercelom...
+echo [4/4] Deploy na Vercel produkciju...
 cd client
-if exist .vercel (
-    echo Brišem stari Vercel config...
-    rmdir /s /q .vercel
-)
-echo Linkujem projekt kao 'nokti-salon'...
-echo nokti-salon > .vercel-project-name.tmp
-vercel link --project=nokti-salon --yes 2>nul || vercel link --yes
-if exist .vercel-project-name.tmp del .vercel-project-name.tmp
-
-echo.
-echo [5/5] Postavljam DATABASE_URL...
-echo postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require^&connection_limit=1^&pool_timeout=0 > .env.temp
-vercel env add DATABASE_URL production --force < .env.temp
-del .env.temp
-
-echo.
-echo [6/6] Deploy na Vercel produkciju...
-vercel --prod --yes
+echo Pokrecem Vercel deployment...
+vercel --prod --yes --force
 cd ..
 
 echo.
