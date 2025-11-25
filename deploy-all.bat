@@ -81,12 +81,8 @@ git push origin master
 echo.
 echo [4/4] Deploy na Vercel produkciju...
 cd client
-if exist .vercel (
-    echo Ciscenje starog Vercel linka...
-    rmdir /s /q .vercel
-)
 echo Pokrecem Vercel deployment...
-vercel --prod --yes
+echo yes | vercel --prod
 cd ..
 
 echo.
