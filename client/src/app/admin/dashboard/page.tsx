@@ -317,11 +317,13 @@ export default function AdminDashboard() {
       const holiday = isHoliday(date);
       
       return (
-        <div className="flex flex-col items-center mt-1">
-          {dayAppointments.length > 0 && (
+        <div className="flex flex-col items-center justify-start mt-1 h-10">
+          {dayAppointments.length > 0 ? (
             <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
               {dayAppointments.length}
             </div>
+          ) : (
+            <div className="h-5"></div>
           )}
           {holiday && (
             <div className="w-2 h-2 bg-red-500 rounded-full mt-1" title={getHolidayName(date)}></div>
@@ -376,14 +378,24 @@ export default function AdminDashboard() {
           color: rgb(156 163 175);
         }
         .calendar-container .react-calendar__tile {
-          padding: 0.75em 0.5em;
+          padding: 0.5em 0.5em;
           position: relative;
           background: white;
           color: rgb(17 24 39);
+          height: 80px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
         }
         .dark .calendar-container .react-calendar__tile {
           background: rgb(31 41 55);
           color: rgb(243 244 246);
+        }
+        .calendar-container .react-calendar__tile abbr {
+          display: block;
+          height: 24px;
+          line-height: 24px;
         }
         .calendar-container .react-calendar__tile:enabled:hover,
         .calendar-container .react-calendar__tile:enabled:focus {
@@ -550,7 +562,7 @@ export default function AdminDashboard() {
                     const pendingMap = new Map(pendingApts.map(apt => [apt.time, apt]));
                     
                     return (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Left Column - Approved/Confirmed Appointments */}
                         <div>
                           <div className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
@@ -562,7 +574,7 @@ export default function AdminDashboard() {
                               const appointment = approvedMap.get(timeSlot);
                               if (!appointment) {
                                 return (
-                                  <div key={timeSlot} className="h-24 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs">
+                                  <div key={timeSlot} className="min-h-[100px] rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs p-2">
                                     {timeSlot} - Slobodno
                                   </div>
                                 );
@@ -572,7 +584,7 @@ export default function AdminDashboard() {
                               return (
                                 <div
                                   key={appointment.id}
-                                  className={`rounded-lg p-4 cursor-pointer transition-all duration-500 ease-in-out h-24 appointment-slide-in ${
+                                  className={`rounded-lg p-3 md:p-4 cursor-pointer transition-all duration-500 ease-in-out min-h-[100px] appointment-slide-in ${
                                     timeStatus === 'current' 
                                       ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500 shadow-lg animate-pulse' 
                                       : timeStatus === 'upcoming'
@@ -581,35 +593,38 @@ export default function AdminDashboard() {
                                   } hover:shadow-md hover:scale-[1.02]`}
                                   onClick={() => setSelectedAppointment(appointment)}
                                 >
-                                  <div className="flex justify-between items-start h-full">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        {timeStatus === 'current' && (
-                                          <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                                          </span>
-                                        )}
-                                        <p className={`font-semibold text-sm ${
-                                          timeStatus === 'current' 
-                                            ? 'text-blue-900 dark:text-blue-100' 
-                                            : 'text-gray-900 dark:text-white'
-                                        }`}>
-                                          {appointment.time} - {appointment.customerName}
-                                        </p>
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          {timeStatus === 'current' && (
+                                            <span className="relative flex h-2 w-2 flex-shrink-0">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                            </span>
+                                          )}
+                                          <p className={`font-semibold text-sm truncate ${
+                                            timeStatus === 'current' 
+                                              ? 'text-blue-900 dark:text-blue-100' 
+                                              : 'text-gray-900 dark:text-white'
+                                          }`}>
+                                            {appointment.time}
+                                          </p>
+                                        </div>
+                                        <p className="text-sm font-medium mt-1 truncate">{appointment.customerName}</p>
                                       </div>
-                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                        {appointment.service?.name} ({appointment.service?.duration} min)
-                                      </p>
-                                      {timeStatus === 'current' && (
-                                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-medium">
-                                          🔴 U TIJEKU
-                                        </p>
-                                      )}
+                                      <span className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ml-2 flex-shrink-0 ${getStatusColor(appointment.status)}`}>
+                                        {getStatusText(appointment.status)}
+                                      </span>
                                     </div>
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
-                                      {getStatusText(appointment.status)}
-                                    </span>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                      {appointment.service?.name} ({appointment.service?.duration} min)
+                                    </p>
+                                    {timeStatus === 'current' && (
+                                      <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                                        🔴 U TIJEKU
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -628,34 +643,39 @@ export default function AdminDashboard() {
                               const appointment = pendingMap.get(timeSlot);
                               if (!appointment) {
                                 return (
-                                  <div key={`pending-${timeSlot}`} className="h-24"></div>
+                                  <div key={`pending-${timeSlot}`} className="min-h-[100px] hidden md:block"></div>
                                 );
                               }
                               
                               return (
                                 <div
                                   key={appointment.id}
-                                  className="rounded-lg p-4 cursor-pointer transition-all duration-500 ease-in-out transform hover:scale-105 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 hover:shadow-lg h-24 appointment-slide-in"
+                                  className="rounded-lg p-3 md:p-4 cursor-pointer transition-all duration-500 ease-in-out transform hover:scale-105 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 hover:shadow-lg min-h-[100px] appointment-slide-in"
                                   onClick={() => setSelectedAppointment(appointment)}
                                 >
-                                  <div className="flex justify-between items-start h-full">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-yellow-500 text-base">⏳</span>
-                                        <p className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
-                                          {appointment.time} - {appointment.customerName}
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-yellow-500 text-base flex-shrink-0">⏳</span>
+                                          <p className="font-semibold text-sm text-yellow-900 dark:text-yellow-100 truncate">
+                                            {appointment.time}
+                                          </p>
+                                        </div>
+                                        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mt-1 truncate">
+                                          {appointment.customerName}
                                         </p>
                                       </div>
-                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                        {appointment.service?.name} ({appointment.service?.duration} min)
-                                      </p>
-                                      <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                                        → Čeka potvrdu
-                                      </p>
+                                      <span className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ml-2 flex-shrink-0 ${getStatusColor(appointment.status)}`}>
+                                        {getStatusText(appointment.status)}
+                                      </span>
                                     </div>
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
-                                      {getStatusText(appointment.status)}
-                                    </span>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                      {appointment.service?.name} ({appointment.service?.duration} min)
+                                    </p>
+                                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                      → Čeka potvrdu
+                                    </p>
                                   </div>
                                 </div>
                               );

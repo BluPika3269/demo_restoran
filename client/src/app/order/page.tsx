@@ -592,7 +592,18 @@ export default function OrderPage() {
                         type="text" 
                         required 
                         value={customerName} 
-                        onChange={(e) => setCustomerName(e.target.value)} 
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Capitalize first letter after space
+                          const capitalized = value
+                            .split(' ')
+                            .map((word, index) => {
+                              if (word.length === 0) return word;
+                              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                            })
+                            .join(' ');
+                          setCustomerName(capitalized);
+                        }} 
                         className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all" 
                         placeholder="Ana Anić" 
                       />

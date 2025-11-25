@@ -56,21 +56,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all appointments for that date
-    const appointmentDate = new Date(date);
+    // Get all appointments for that date (full day range)
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    console.log('Searching appointments between:', startOfDay, 'and', endOfDay);
     
     const appointments = await prisma.appointment.findMany({
       where: {
-        date: appointmentDate,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        },
         status: { in: ['pending', 'approved'] }
       },
       include: {
         service: true
       }
     });
+    
+    console.log('Found appointments:', appointments.length);
 
     // Generate all possible time slots
-    const allSlots = generateTimeSlots(appointmentDate, service.duration);
+    const allSlots = generateTimeSlots(startOfDay, service.duration);
 
     // Filter slots based on actual time conflicts with service duration
     const availableSlots = allSlots.filter(slot => {
