@@ -28,7 +28,10 @@ function timeStringToMinutes(timeString: string): number {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('POST /api/appointments - Start');
     const body = await request.json();
+    console.log('Request body:', JSON.stringify(body));
+    
     const {
       serviceId,
       size,
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!serviceId || !date || !time || !customerName || !customerEmail || !customerPhone) {
+      console.log('Validation failed - missing fields');
       return NextResponse.json(
         { error: 'Nedostaju obavezna polja' },
         { status: 400 }
@@ -122,6 +126,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(appointment, { status: 201 });
   } catch (error) {
     console.error('Error creating appointment:', error);
-    return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 });
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    return NextResponse.json({ 
+      error: 'Failed to create appointment',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
