@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const appointments = await prisma.appointment.findMany({
       include: {
@@ -34,8 +34,6 @@ export async function POST(request: NextRequest) {
     
     const {
       serviceId,
-      size,
-      design,
       date,
       time,
       customerName,
@@ -106,8 +104,6 @@ export async function POST(request: NextRequest) {
         serviceId: parseInt(serviceId),
         date: appointmentDate,
         time,
-        size: size || '',
-        design: design || '',
         customerName,
         customerPhone,
         customerEmail,

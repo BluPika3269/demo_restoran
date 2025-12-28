@@ -1,83 +1,96 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Heart, Award, Users, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 
 export default function About() {
-  const features = [
-    {
-      icon: Sparkles,
-      title: 'Najnoviji Trendovi',
-      description: 'Pratimo najnovije trendove u manikuri i pedikuri s vrhunskim proizvodima.'
-    },
-    {
-      icon: Award,
-      title: 'Profesionalna Usluga',
-      description: 'Naše majstorice imaju godine iskustva u pružanju vrhunske njege noktiju.'
-    },
-    {
-      icon: Users,
-      title: 'Iskustvo od 15 godina',
-      description: 'Više od 15 godina stvaramo ljepotu i zadovoljavamo naše klijentice.'
-    }
-  ];
-
   return (
-    <section id="about" className="py-20 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            O Našem Salonu
-          </h2>
-          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Više od 15 godina stvaramo ljepotu i njegujemo nokte naših klijentica.
-            Naša strast prema ljepoti i posvećenost kvalitetu čine nas liderom u industriji.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              className="text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.2, duration: 0.6 }}
-            >
-              <div className="w-16 h-16 bg-linear-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <feature.icon className="w-8 h-8 text-white" />
+    <section id="about" className="relative py-16 sm:py-24 lg:py-32 bg-[#0A0A0A]">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 sm:gap-16 lg:grid-cols-2 lg:gap-20 xl:gap-24">
+          {/* Left Side - Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="flex flex-col justify-center"
+          >
+            <span className="mb-6 inline-block text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
+              Naša Priča
+            </span>
+            <h2 className="mb-6 sm:mb-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Tradicija koja živi kroz okuse
+            </h2>
+            <div className="divider-gold mb-8" />
+            <p className="mb-6 text-lg leading-relaxed text-gray-300">
+              Već više od 20 godina stvaramo nezaboravna kulinarska iskustva, spajajući tradiciju 
+              sa modernim pristupom gastronomiji. Svaki obrok je putovanje kroz vrhunske okuse, 
+              pripremljen s pažnjom i ljubavlju prema savršenstvu.
+            </p>
+            <p className="mb-8 text-lg leading-relaxed text-gray-300">
+              Naša kuhinja slavi lokalne sastojke i sezonske proizvode, transformirajući ih u 
+              djela kulinarske umjetnosti koja oduševljavaju sve osjetila.
+            </p>
+            
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 sm:gap-6 lg:gap-8 border-t border-[#D4AF37]/20 pt-6 sm:pt-8">
+              <div className="text-center">
+                <div className="mb-2 text-3xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  20+
+                </div>
+                <div className="text-sm uppercase tracking-wider text-gray-400">Godina</div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                {feature.description}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+              <div className="text-center">
+                <div className="mb-2 text-3xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  50+
+                </div>
+                <div className="text-sm uppercase tracking-wider text-gray-400">Jela</div>
+              </div>
+              <div className="text-center">
+                <div className="mb-2 text-3xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  5★
+                </div>
+                <div className="text-sm uppercase tracking-wider text-gray-400">Ocjena</div>
+              </div>
+            </div>
+          </motion.div>
 
-        <motion.div
-          className="bg-linear-to-r from-purple-500 to-pink-500 rounded-3xl p-8 md:p-12 text-white text-center"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h3 className="text-3xl md:text-4xl font-bold mb-4">
-            Spremni za Vašu Transformaciju?
-          </h3>
-          <p className="text-lg mb-6 max-w-2xl mx-auto">
-            Kontaktirajte nas danas i zajedno ćemo stvoriti savršen izgled za vaše nokte.
-          </p>
-          <a href="/order" className="inline-block bg-white dark:bg-gray-900 text-purple-600 dark:text-yellow-400 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-300">
-            Rezervirajte Termin
-          </a>
-        </motion.div>
+          {/* Right Side - Images */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative"
+          >
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="parallax-container col-span-2 h-48 sm:h-56 md:h-64 overflow-hidden rounded-lg">
+                <img
+                  src="https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=2070&auto=format&fit=crop"
+                  alt="Restaurant interior"
+                  className="parallax-image h-full w-full object-cover"
+                />
+              </div>
+              <div className="parallax-container h-64 overflow-hidden rounded-lg">
+                <img
+                  src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop"
+                  alt="Dining experience"
+                  className="parallax-image h-full w-full object-cover"
+                />
+              </div>
+              <div className="parallax-container h-64 overflow-hidden rounded-lg">
+                <img
+                  src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=2074&auto=format&fit=crop"
+                  alt="Chef preparing"
+                  className="parallax-image h-full w-full object-cover"
+                />
+              </div>
+            </div>
+            {/* Decorative element */}
+            <div className="absolute -bottom-8 -right-8 h-48 w-48 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+          </motion.div>
+        </div>
       </div>
     </section>
   );

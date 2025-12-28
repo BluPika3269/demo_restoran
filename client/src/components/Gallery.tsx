@@ -1,198 +1,147 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
 
-interface Service {
-  id: number;
-  name: string;
-  description: string | null;
-  price: number;
-  duration: number;
-  image: string | null;
-  categoryId: number;
-  category: {
-    id: number;
-    name: string;
-    type: string;
-  };
-}
+const categories = ['Predjela', 'Glavna Jela', 'Deserti', 'Vina'];
 
-// Funkcija za dobijanje default slike
-const getDefaultImage = (index: number) => {
-  const images = [
-    '/images/Baby Boomer Nokti.png',
-    '/images/crveni nokti.png',
-    '/images/matte.png',
-    '/images/Nude Nokti s Detaljima.png'
-  ];
-  return images[index % images.length];
-};
+const menuItems = [
+  // Predjela
+  { id: 1, name: 'Goveđi Tartare', category: 'Predjela', price: '12€', image: 'https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?q=80&w=2070&auto=format&fit=crop', desc: 'S tartufom i parmezanom' },
+  { id: 6, name: 'Burrata Salata', category: 'Predjela', price: '11€', image: 'https://images.unsplash.com/photo-1546069901-5ec6a79120b0?q=80&w=2080&auto=format&fit=crop', desc: 'Sa cherry rajčicama i rukolom' },
+  { id: 17, name: 'Dalmatinska Pršut Plata', category: 'Predjela', price: '15€', image: 'https://images.unsplash.com/photo-1542010589005-d1eacc3918f2?q=80&w=2070&auto=format&fit=crop', desc: 'S domaćim sirevima i maslinama' },
+  { id: 18, name: 'Carpaccio od Tune', category: 'Predjela', price: '14€', image: 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?q=80&w=2070&auto=format&fit=crop', desc: 'S ruccolom, parmezanom i limunom' },
+  { id: 19, name: 'Lignje na Žaru', category: 'Predjela', price: '13€', image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?q=80&w=2070&auto=format&fit=crop', desc: 'S češnjakom i peršinom' },
+  { id: 20, name: 'Bruschetta Caprese', category: 'Predjela', price: '9€', image: 'https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?q=80&w=2070&auto=format&fit=crop', desc: 'Sa svježim rajčicama i mozzarellom' },
+  
+  // Glavna Jela
+  { id: 2, name: 'Ribeye Steak', category: 'Glavna Jela', price: '38€', image: 'https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=2031&auto=format&fit=crop', desc: 'Dry-aged 250g, s grillanim povrćem' },
+  { id: 3, name: 'Morski Plodovi Risotto', category: 'Glavna Jela', price: '19€', image: 'https://images.unsplash.com/photo-1516100882582-96c3a05fe590?q=80&w=2070&auto=format&fit=crop', desc: 'Sa svježim kozicama i dagnjama' },
+  { id: 5, name: 'Crna Pasta s Plodovima Mora', category: 'Glavna Jela', price: '18€', image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=2070&auto=format&fit=crop', desc: 'Sa sipe tintom i svježim plodovima' },
+  { id: 21, name: 'Janjetina Ispod Peke', category: 'Glavna Jela', price: '32€', image: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=2070&auto=format&fit=crop', desc: 'Tradicionalna dalmatinska janjetina' },
+  { id: 22, name: 'Brancin na Žaru', category: 'Glavna Jela', price: '28€', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=2070&auto=format&fit=crop', desc: 'Cijela riba s mediteranskim povrćem' },
+  { id: 23, name: 'Teleća Peka', category: 'Glavna Jela', price: '30€', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=2069&auto=format&fit=crop', desc: 'Sa krumpirom i začinskim biljem' },
+  { id: 24, name: 'Crni Rižot', category: 'Glavna Jela', price: '22€', image: 'https://images.unsplash.com/photo-1633504581786-316c8002b1b9?q=80&w=2070&auto=format&fit=crop', desc: 'Od sipe s domaćim vinom' },
+  { id: 25, name: 'Ramstek sa Šampinjonima', category: 'Glavna Jela', price: '35€', image: 'https://images.unsplash.com/photo-1600891964599-f61ba0e24092?q=80&w=2070&auto=format&fit=crop', desc: 'U umaku od tartufa' },
+  
+  // Deserti
+  { id: 4, name: 'Tiramisu', category: 'Deserti', price: '7€', image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?q=80&w=2070&auto=format&fit=crop', desc: 'Klasični talijanski desert' },
+  { id: 7, name: 'Lava Cake', category: 'Deserti', price: '9€', image: 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?q=80&w=2070&auto=format&fit=crop', desc: 'Čokoladni kolač s toplim srcem' },
+  { id: 8, name: 'Panna Cotta', category: 'Deserti', price: '7€', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=2070&auto=format&fit=crop', desc: 'Sa šumskim voćem' },
+  { id: 26, name: 'Rozata', category: 'Deserti', price: '6€', image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?q=80&w=2080&auto=format&fit=crop', desc: 'Dalmatinski krem karamel' },
+  { id: 27, name: 'Cheesecake od Smokava', category: 'Deserti', price: '8€', image: 'https://images.unsplash.com/photo-1533134242116-8da99b0c0d0b?q=80&w=2070&auto=format&fit=crop', desc: 'Sa svježim smokama i medom' },
+  { id: 28, name: 'Makovnjača', category: 'Deserti', price: '6€', image: 'https://images.unsplash.com/photo-1509365465985-25d11c17e812?q=80&w=2070&auto=format&fit=crop', desc: 'Tradicionalni kolač s makom' },
+  
+  // Vina
+  { id: 9, name: 'Malvazija Istarska', category: 'Vina', price: '42€', image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=2070&auto=format&fit=crop', desc: 'Svježe hrvatsko bijelo vino s obale Istre' },
+  { id: 10, name: 'Graševina', category: 'Vina', price: '38€', image: 'https://images.unsplash.com/photo-1547595628-c61a29f496f0?q=80&w=2070&auto=format&fit=crop', desc: 'Tradicionalno bijelo vino iz kontinentalne Hrvatske' },
+  { id: 11, name: 'Plavac Mali', category: 'Vina', price: '55€', image: 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?q=80&w=2070&auto=format&fit=crop', desc: 'Robusno crveno vino s dalmatinske obale' },
+  { id: 12, name: 'Dingač', category: 'Vina', price: '85€', image: 'https://images.unsplash.com/photo-1566995684286-c0f2589da714?q=80&w=2070&auto=format&fit=crop', desc: 'Premium Plavac Mali s Pelješca' },
+  { id: 13, name: 'Pošip', category: 'Vina', price: '48€', image: 'https://images.unsplash.com/photo-1598254436786-8f2e7b0453ba?q=80&w=2070&auto=format&fit=crop', desc: 'Autohtono bijelo vino s otoka Korčule' },
+  { id: 14, name: 'Babić', category: 'Vina', price: '52€', image: 'https://images.unsplash.com/photo-1586370434639-0fe43b2d32d6?q=80&w=2070&auto=format&fit=crop', desc: 'Tradicijsko crveno vino iz Primorja' },
+  { id: 15, name: 'Teran', category: 'Vina', price: '45€', image: 'https://images.unsplash.com/photo-1596797882870-8b0d5e0ca77e?q=80&w=2070&auto=format&fit=crop', desc: 'Karakterno crveno vino iz Istre' },
+  { id: 16, name: 'Žlahtina', category: 'Vina', price: '40€', image: 'https://images.unsplash.com/photo-1474722883778-792e7990302f?q=80&w=2070&auto=format&fit=crop', desc: 'Lako i osvježavajuće vino s otoka Krka' },
+];
 
 export default function Gallery() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCake, setSelectedCake] = useState<Service | null>(null);
-  const router = useRouter();
+  const [activeCategory, setActiveCategory] = useState('Predjela');
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await fetch('/api/services');
-        if (response.ok) {
-          const data = await response.json();
-          // Prikaži prvih 6 usluga i dodaj lokalne slike ako service nema sliku
-          const servicesWithImages = data.slice(0, 6).map((service: Service, index: number) => ({
-            ...service,
-            image: service.image || getDefaultImage(index)
-          }));
-          setServices(servicesWithImages);
-        } else {
-          // Fallback ako API ne radi - prikaži dummy podatke sa lokalnim slikama
-          setServices([
-            { id: 1, name: 'Gel Lakiranje', description: 'Trajni gel lak u boji po izboru', price: 30, duration: 60, image: '/images/crveni nokti.png', categoryId: 1, category: { id: 1, name: 'Gellak', type: 'service' } },
-            { id: 2, name: 'French Manikura', description: 'Elegantna french manikura', price: 35, duration: 90, image: '/images/Baby Boomer Nokti.png', categoryId: 1, category: { id: 1, name: 'Manikir', type: 'service' } },
-            { id: 3, name: 'Ojačanje Noktiju', description: 'Ojačanje prirodnih noktiju gelom', price: 40, duration: 90, image: '/images/matte.png', categoryId: 2, category: { id: 2, name: 'Geliranje', type: 'service' } },
-            { id: 4, name: 'Baby Boomer Nokti', description: 'Popularan ombre dizajn', price: 45, duration: 120, image: '/images/Baby Boomer Nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-            { id: 5, name: 'Nail Art Dizajn', description: 'Kreativni dizajn po želji', price: 50, duration: 150, image: '/images/Nude Nokti s Detaljima.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-            { id: 6, name: 'Produžetak Noktiju', description: 'Produžetak gelom ili akrikom', price: 55, duration: 120, image: '/images/crveni nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } }
-          ]);
-        }
-      } catch (error) {
-        console.error('Error fetching services:', error);
-        // Fallback podatci sa lokalnim slikama
-        setServices([
-          { id: 1, name: 'Gel Lakiranje', description: 'Trajni gel lak u boji po izboru', price: 30, duration: 60, image: '/images/Baby Boomer Nokti.png', categoryId: 1, category: { id: 1, name: 'Gellak', type: 'service' } },
-          { id: 2, name: 'French Manikura', description: 'Elegantna french manikura', price: 35, duration: 90, image: '/images/crveni nokti.png', categoryId: 1, category: { id: 1, name: 'Manikir', type: 'service' } },
-          { id: 3, name: 'Ojačanje Noktiju', description: 'Ojačanje prirodnih noktiju gelom', price: 40, duration: 90, image: '/images/matte.png', categoryId: 2, category: { id: 2, name: 'Geliranje', type: 'service' } },
-          { id: 4, name: 'Baby Boomer Nokti', description: 'Popularan ombre dizajn', price: 45, duration: 120, image: '/images/Nude Nokti s Detaljima.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-          { id: 5, name: 'Nail Art Dizajn', description: 'Kreativni dizajn po želji', price: 50, duration: 150, image: '/images/Baby Boomer Nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } },
-          { id: 6, name: 'Produžetak Noktiju', description: 'Produžetak gelom ili akrikom', price: 55, duration: 120, image: '/images/crveni nokti.png', categoryId: 3, category: { id: 3, name: 'Ugradnja', type: 'service' } }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const filteredItems = menuItems.filter(item => item.category === activeCategory);
 
-    fetchServices();
-  }, []);
   return (
-    <section id="gallery" className="py-20 bg-white dark:bg-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="gallery" className="relative py-32 bg-[#FAF8F3]">
+      <div className="container mx-auto px-4">
+        {/* Header */}
         <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mb-16 text-center"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            Najpopularniji Dizajni Noktiju
+          <span className="mb-6 inline-block text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
+            Naša Ponuda
+          </span>
+          <h2 className="mb-4 text-4xl font-bold text-black md:text-5xl lg:text-6xl" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Kulinarski Užitak
           </h2>
-          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Otkrijte naše najpopularnije dizajne noktiju koje najviše traže naše klijentice
-          </p>
+          <div className="divider-gold" />
         </motion.div>
 
-        {loading ? (
-          <div className="text-center col-span-full py-20">
-            <p className="text-xl text-gray-600 dark:text-gray-300">Učitavam usluge...</p>
-          </div>
-        ) : services.length === 0 ? (
-          <div className="text-center col-span-full py-20">
-            <p className="text-xl text-gray-600 dark:text-gray-300">Nema dostupnih usluga</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <motion.div
-                key={service.id}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer min-h-[400px] flex flex-col"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                whileHover={{ y: -10 }}
-                onClick={() => setSelectedCake(service)}
-              >
-                <div className="relative h-64 bg-gray-200">
-                  <Image
-                    src={service.image || '/images/Baby Boomer Nokti.png'}
-                    alt={service.name}
-                    fill
-                    className="object-cover rounded-t-2xl"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {service.name}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4 min-h-[3rem]">
-                    {service.description || `${service.category.name} - ${service.duration} min`}
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-yellow-400">
-                      {service.price}€
-                    </span>
-                    <button onClick={() => router.push('/order')} className="px-6 py-3 sm:px-4 sm:py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors duration-300">
-                      Rezerviraj
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Modal za pregled dizajna */}
-      {selectedCake && (
+        {/* Category Filter */}
         <motion.div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-12 flex flex-wrap justify-center gap-4"
+        >
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-6 py-2.5 text-sm font-semibold uppercase tracking-wider transition-all duration-300 ${
+                activeCategory === category
+                  ? 'bg-[#D4AF37] text-black shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-[#D4AF37] hover:text-black'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </motion.div>
+
+        {/* Menu Grid */}
+        <motion.div 
+          className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setSelectedCake(null)}
+          transition={{ duration: 0.3 }}
         >
-          <motion.div
-            className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative">
-              <button
-                className="absolute top-4 right-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full p-2 shadow-lg z-10 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                onClick={() => setSelectedCake(null)}
-              >
-                <X className="w-6 h-6" />
-              </button>
-              <Image
-                src={selectedCake.image || '/images/Baby Boomer Nokti.png'}
-                alt={selectedCake.name}
-                width={800}
-                height={600}
-                className="w-full h-64 md:h-96 object-cover"
-                unoptimized
-              />
-            </div>
-            <div className="p-8">
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{selectedCake.name}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">{selectedCake.description || `${selectedCake.category.name} - ${selectedCake.duration} min`}</p>
-              <div className="flex justify-between items-center">
-                <span className="text-3xl font-bold text-yellow-400">{selectedCake.price}€</span>
-                <button onClick={() => router.push('/order')} className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
-                  Rezerviraj Sada
-                </button>
+          {filteredItems.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="card-hover group overflow-hidden rounded-lg bg-white shadow-lg"
+            >
+              {/* Image */}
+              <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-100">
+                {item.image ? (
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAUABQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlbaWmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD2aiiigD//2Q=="
+                  />
+                ) : (
+                  <div className="h-full w-full bg-[#1A1A1A] flex items-center justify-center">
+                    <span className="text-[#D4AF37] text-4xl">🍷</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               </div>
-            </div>
-          </motion.div>
+              
+              {/* Content */}
+              <div className="p-6">
+                <div className="mb-2 flex items-start justify-between">
+                  <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    {item.name}
+                  </h3>
+                  <span className="text-lg font-bold text-[#D4AF37]">{item.price}</span>
+                </div>
+                <p className="text-sm text-gray-600">{item.desc}</p>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
-      )}
+      </div>
     </section>
   );
 }

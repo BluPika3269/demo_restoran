@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/admin/appointments - Fetch all appointments
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const appointments = await prisma.appointment.findMany({
       include: {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { serviceId, date, time, size, design, customerName, customerEmail, customerPhone, notes } = body;
+    const { serviceId, date, time, customerName, customerEmail, customerPhone, notes } = body;
 
     // Validate required fields
     if (!serviceId || !date || !time || !customerName || !customerEmail || !customerPhone) {
@@ -51,13 +51,11 @@ export async function POST(request: NextRequest) {
         serviceId: parseInt(serviceId),
         date: appointmentDate,
         time,
-        size: size || '',
-        design: design || '',
         customerName,
         customerPhone,
         customerEmail,
         notes: notes || '',
-        status: 'PENDING'
+        status: 'pending'
       },
       include: {
         service: {

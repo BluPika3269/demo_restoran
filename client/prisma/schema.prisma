@@ -3,54 +3,39 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
-model ServiceCategory {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String?
-  image       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  services    Service[]
+model Table {
+  id           Int      @id @default(autoincrement())
+  number       Int      @unique
+  capacity     Int
+  status       String   @default("available") // available, reserved, occupied
+  x            Float    // X koordinata na planu
+  y            Float    // Y koordinata na planu
+  shape        String   @default("rectangle") // rectangle, circle, square
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reservations Reservation[]
 
-  @@map("service_categories")
+  @@map("tables")
 }
 
-model Service {
-  id           Int             @id @default(autoincrement())
-  name         String
-  description  String?
-  price        Float
-  duration     Int
-  image        String?
-  categoryId   Int
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  appointments Appointment[]
-  category     ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@map("services")
-}
-
-model Appointment {
+model Reservation {
   id            Int      @id @default(autoincrement())
-  serviceId     Int
-  size          String
-  design        String?
+  tableId       Int?
   date          DateTime
   time          String
+  duration      Int      @default(120) // trajanje u minutama
+  numberOfGuests Int
   customerName  String
   customerPhone String
-  customerEmail String
+  customerEmail String?
   status        String   @default("pending")
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  service       Service  @relation(fields: [serviceId], references: [id])
+  table         Table?   @relation(fields: [tableId], references: [id])
 
-  @@map("appointments")
+  @@map("reservations")
 }

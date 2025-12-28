@@ -5,7 +5,7 @@ const { PrismaClient } = require('./client/node_modules/@prisma/client');
 const localPrisma = new PrismaClient({
   datasources: {
     db: {
-      url: 'postgresql://postgres:fgg@localhost:5432/web_stranica_nokti'
+      url: 'postgresql://postgres:fgg@localhost:5432/restoran_booking'
     }
   }
 });

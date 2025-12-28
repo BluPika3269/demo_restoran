@@ -21,14 +21,14 @@ echo.
 echo ====================================
 echo.
 
-cd /d "e:\Damii\Posao\PRIVATNO\Web stranice\Nokti"
+cd /d "d:\Projects\PRIVATNO\Web stranice\Restorani"
 
 echo ====================================
 echo   SINKRONIZACIJA BAZE
 echo ====================================
 echo.
 echo Odaberi akciju za bazu:
-echo [1] Uploadaj lokalne podatke na Neon (web_stranica_nokti)
+echo [1] Uploadaj lokalne podatke na Neon (restoran_booking)
 echo [2] Resetiraj Neon + uploadaj lokalne podatke (BRISE SVE!)
 echo [3] Preskoci sinkronizaciju baze
 echo.
@@ -37,7 +37,7 @@ set db_choice=%ERRORLEVEL%
 
 if "%db_choice%"=="1" (
     echo.
-    echo Sinkroniziram lokalnu bazu web_stranica_nokti na Neon...
+    echo Sinkroniziram lokalnu bazu restoran_booking na Neon...
     call node sync-local-to-neon.js
     echo Baza sinkronizirana!
 )
@@ -46,7 +46,7 @@ if "%db_choice%"=="2" (
     echo.
     echo Resetiram i kreiram Neon bazu...
     cd client
-    set "DATABASE_URL=postgresql://neondb_owner:npg_rgSBQKc4Gk1T@ep-flat-credit-agkt1oxd-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+    set "DATABASE_URL=postgresql://neondb_owner:npg_MhV4up3IRJiU@ep-crimson-sky-agr6ecfr-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
     call npx prisma migrate reset --force --skip-seed
     cd ..
     echo.

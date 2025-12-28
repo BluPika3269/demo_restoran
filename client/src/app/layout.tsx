@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bliss Nails",
-  description: "Profesionalni salon za nokte s najnovijim trendovima i vrhunskom uslugom",
+  title: process.env.NEXT_PUBLIC_BUSINESS_NAME || "Your Business",
+  description: process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "Professional services with the latest trends and exceptional quality",
 };
 
 export const viewport = {
@@ -33,6 +33,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ThemeProvider
           attribute="class"

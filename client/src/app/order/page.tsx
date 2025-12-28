@@ -106,7 +106,7 @@ export default function OrderPage() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Array<{ id: number; date: Date; time: string; serviceId: number }>>([]);
   
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -142,6 +142,7 @@ export default function OrderPage() {
     if (selectedDate && selectedService) {
       fetchAvailableSlots();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedService]);
 
   const fetchAvailableSlots = async () => {
@@ -203,18 +204,14 @@ export default function OrderPage() {
         notes
       });
       setIsConfirmed(true);
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'Greška prilikom kreiranja rezervacije');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as {response?: {data?: {error?: string}}}).response?.data?.error 
+        : 'Greška prilikom kreiranja rezervacije';
+      alert(errorMessage || 'Greška prilikom kreiranja rezervacije');
     } finally {
       setLoading(false);
     }
-  };
-
-  const getAppointmentsForDate = (date: Date) => {
-    return appointments.filter(apt => {
-      const aptDate = new Date(apt.date);
-      return aptDate.toDateString() === date.toDateString();
-    });
   };
 
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
@@ -295,8 +292,8 @@ export default function OrderPage() {
       <div className="pt-24 py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Rezervirajte Termin</h1>
-            <p className="text-gray-600 dark:text-gray-300">Popunite korake redom</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Rezervirajte Svoj Stol</h1>
+            <p className="text-gray-600 dark:text-gray-300">Odaberite datum i vrijeme za vašu rezervaciju</p>
           </div>
 
           <div className="space-y-6">
@@ -627,7 +624,7 @@ export default function OrderPage() {
                           // Capitalize first letter after space
                           const capitalized = value
                             .split(' ')
-                            .map((word, index) => {
+                            .map((word) => {
                               if (word.length === 0) return word;
                               return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
                             })

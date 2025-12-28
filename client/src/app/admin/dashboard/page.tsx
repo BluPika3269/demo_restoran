@@ -2,1384 +2,1418 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import { format, isToday, isSameDay } from 'date-fns';
+import { motion } from 'framer-motion';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import Navigation from '@/components/Navigation';
 
 const API_URL = '/api';
 
-// Croatian public holidays
-const getCroatianHolidays = (year: number) => {
-  return [
-    { date: new Date(year, 0, 1), name: 'Nova godina' },
-    { date: new Date(year, 0, 6), name: 'Bogojavljenje, Sveta tri kralja' },
-    { date: new Date(year, 4, 1), name: 'Praznik rada' },
-    { date: new Date(year, 4, 30), name: 'Dan državnosti' },
-    { date: new Date(year, 5, 22), name: 'Dan antifašističke borbe' },
-    { date: new Date(year, 7, 5), name: 'Dan pobjede i domovinske zahvalnosti' },
-    { date: new Date(year, 7, 15), name: 'Velika Gospa' },
-    { date: new Date(year, 10, 1), name: 'Dan svih svetih' },
-    { date: new Date(year, 10, 18), name: 'Dan sjećanja na žrtve Domovinskog rata' },
-    { date: new Date(year, 11, 25), name: 'Božić' },
-    { date: new Date(year, 11, 26), name: 'Sveti Stjepan' },
-    // Uskrs i Uskrsni ponedjeljak (movable holidays - approximate)
-    ...getEasterDates(year)
-  ];
-};
+const TIME_SLOTS = [
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+  '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30'
+];
 
-// Calculate Easter and related holidays (using simplified calculation)
-const getEasterDates = (year: number) => {
-  // Simplified Easter calculation (Meeus/Jones/Butcher algorithm)
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1; // 0-indexed
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  
-  const easter = new Date(year, month, day);
-  const easterMonday = new Date(year, month, day + 1);
-  const corpusChristi = new Date(year, month, day + 60); // 60 days after Easter
-  
-  return [
-    { date: easter, name: 'Uskrs' },
-    { date: easterMonday, name: 'Uskrsni ponedjeljak' },
-    { date: corpusChristi, name: 'Tijelovo' }
-  ];
-};
-
-const isHoliday = (date: Date) => {
-  const year = date.getFullYear();
-  const holidays = getCroatianHolidays(year);
-  
-  return holidays.some(holiday => 
-    holiday.date.getDate() === date.getDate() &&
-    holiday.date.getMonth() === date.getMonth() &&
-    holiday.date.getFullYear() === date.getFullYear()
-  );
-};
-
-const getHolidayName = (date: Date) => {
-  const year = date.getFullYear();
-  const holidays = getCroatianHolidays(year);
-  
-  const holiday = holidays.find(h => 
-    h.date.getDate() === date.getDate() &&
-    h.date.getMonth() === date.getMonth() &&
-    h.date.getFullYear() === date.getFullYear()
-  );
-  
-  return holiday?.name;
-};
-
-interface Appointment {
+interface Table {
   id: number;
-  serviceId: number;
+  number: number;
+  capacity: number;
+  x: number;
+  y: number;
+  shape: string;
+}
+
+interface Reservation {
+  id: number;
+  tableId: number | null;
   date: string;
   time: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  notes: string;
+  numberOfGuests: number;
+  specialRequests?: string;
   status: 'pending' | 'approved' | 'completed' | 'cancelled';
-  service?: {
+  table?: {
     id: number;
-    name: string;
-    price: number;
-    duration: number;
+    number: number;
+    capacity: number;
   };
 }
 
 export default function AdminDashboard() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activeStartDate, setActiveStartDate] = useState<Date>(new Date());
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
-  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
-  const [appointmentToReschedule, setAppointmentToReschedule] = useState<Appointment | null>(null);
-  const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'cancelled' | 'today'>('all');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
+  const [reservedTableIds, setReservedTableIds] = useState<number[]>([]);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'cancel' | 'delete', id: number, name: string } | null>(null);
+  const [showNewReservationModal, setShowNewReservationModal] = useState(false);
+  const [newReservation, setNewReservation] = useState({
+    date: new Date(),
+    time: '19:00',
+    numberOfGuests: 2,
+    customerName: '',
+    customerPhone: '',
+    customerEmail: '',
+    specialRequests: ''
+  });
+  const [timeAvailability, setTimeAvailability] = useState<Record<string, boolean>>({});
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const router = useRouter();
 
+  // Capitalize first letter of each word
+  const capitalizeName = (value: string) => {
+    return value
+      .split(' ')
+      .map(word => {
+        if (word.length === 0) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
+
+  // Validate email format
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError('');
+      return true; // Email is optional
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    const isValid = emailRegex.test(email);
+    setEmailError(isValid ? '' : 'Unesite valjanu email adresu');
+    return isValid;
+  };
+
+  const formatPhoneNumber = (phone: string) => {
+    // Format: +385 92 3456 789
+    const cleaned = phone.replace(/\s/g, '');
+    if (cleaned.startsWith('+385')) {
+      const number = cleaned.substring(4);
+      return `+385 ${number.substring(0, 2)} ${number.substring(2, 6)} ${number.substring(6)}`;
+    }
+    return phone;
+  };
+
   useEffect(() => {
-    // Check if admin is logged in
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
     if (!isLoggedIn) {
       router.push('/admin/login');
       return;
     }
+    fetchReservations();
+  }, [router]);
 
-    fetchAppointments();
-  }, []);
+  // Check availability when date or guests change in new reservation modal
+  useEffect(() => {
+    if (showNewReservationModal && newReservation.date && newReservation.numberOfGuests > 0) {
+      checkAvailabilityForAllTimes();
+    }
+  }, [showNewReservationModal, newReservation.date, newReservation.numberOfGuests]);
 
-  const fetchAppointments = async () => {
+  const checkAvailabilityForAllTimes = async () => {
+    if (!newReservation.date) return;
+    
+    setCheckingAvailability(true);
+    
+    try {
+      const response = await fetch(
+        `${API_URL}/availability/date?date=${format(newReservation.date, 'yyyy-MM-dd')}&numberOfGuests=${newReservation.numberOfGuests}`
+      );
+      const data = await response.json();
+      
+      if (data.success && data.availability) {
+        setTimeAvailability(data.availability);
+      }
+    } catch (error) {
+      console.error('Error checking time availability:', error);
+      setTimeAvailability({});
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
+  const fetchReservations = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/admin/appointments`);
+      console.log('Fetching reservations from API...');
+      const response = await fetch(`${API_URL}/reservations`);
       const data = await response.json();
-      // Sortiraj od najskijeg prema najranijem (najprije nadolazeći termini)
-      const sortedData = data.sort((a: Appointment, b: Appointment) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (dateA !== dateB) return dateA - dateB; // Prvo po datumu
-        // Ako je isti datum, sortiraj po vremenu
-        const [hoursA, minutesA] = a.time.split(':').map(Number);
-        const [hoursB, minutesB] = b.time.split(':').map(Number);
-        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
+      console.log('Received reservations:', data.length);
+      console.log('Sample:', data.slice(0, 3));
+      const sortedData = data.sort((a: Reservation, b: Reservation) => {
+        const dateA = new Date(a.date + 'T' + a.time).getTime();
+        const dateB = new Date(b.date + 'T' + b.time).getTime();
+        return dateA - dateB;
       });
-      setAppointments(sortedData);
+      setReservations(sortedData);
+      console.log('Set reservations state with', sortedData.length, 'items');
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      console.error('Error fetching reservations:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateAppointmentStatus = async (appointmentId: number, status: Appointment['status']) => {
+  const updateStatus = async (id: number, status: Reservation['status']) => {
     try {
-      await fetch(`${API_URL}/admin/appointments/${appointmentId}`, {
+      await fetch(`${API_URL}/reservations/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      fetchAppointments(); // Refresh data
+      fetchReservations();
     } catch (error) {
-      console.error('Error updating appointment:', error);
+      console.error('Error updating status:', error);
     }
   };
 
-  const deleteAppointment = async (appointmentId: number) => {
-    const appointment = appointments.find(a => a.id === appointmentId);
-    setAppointmentToDelete(appointment || null);
-    setShowDeleteModal(true);
+  const requestCancelReservation = (reservation: Reservation) => {
+    setConfirmAction({ type: 'cancel', id: reservation.id, name: reservation.customerName });
+    setShowConfirmModal(true);
   };
 
-  const rescheduleAppointment = async (appointment: Appointment) => {
-    setAppointmentToReschedule(appointment);
-    setNewDate(appointment.date.split('T')[0]);
-    setNewTime(appointment.time);
-    setShowRescheduleModal(true);
-    // Fetch available slots for current date
-    fetchAvailableSlots(appointment.date.split('T')[0], appointment.serviceId);
+  const requestDeleteReservation = (reservation: Reservation) => {
+    setConfirmAction({ type: 'delete', id: reservation.id, name: reservation.customerName });
+    setShowConfirmModal(true);
   };
 
-  const fetchAvailableSlots = async (date: string, serviceId: number, excludeAppointmentId?: number) => {
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return;
+
     try {
-      const url = excludeAppointmentId 
-        ? `${API_URL}/availability?date=${date}&serviceId=${serviceId}&excludeAppointmentId=${excludeAppointmentId}`
-        : `${API_URL}/availability?date=${date}&serviceId=${serviceId}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      setAvailableSlots(data.availableSlots || []);
+      if (confirmAction.type === 'cancel') {
+        await fetch(`${API_URL}/reservations/${confirmAction.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'cancelled' }),
+        });
+      } else if (confirmAction.type === 'delete') {
+        await fetch(`${API_URL}/reservations/${confirmAction.id}`, {
+          method: 'DELETE',
+        });
+      }
+      fetchReservations();
     } catch (error) {
-      console.error('Error fetching available slots:', error);
-      setAvailableSlots([]);
+      console.error('Error executing action:', error);
+    } finally {
+      setShowConfirmModal(false);
+      setConfirmAction(null);
     }
   };
 
-  const confirmReschedule = async () => {
-    if (!appointmentToReschedule || !newDate || !newTime) return;
+  const openTableSelection = async (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    setSelectedTableId(reservation.tableId);
+    setShowTableModal(true);
+    await fetchTablesAndReservations(reservation);
+  };
 
+  // Trajanje rezervacije u minutama (2 sata)
+  const RESERVATION_DURATION = 120;
+
+  // Helper funkcija za pretvaranje vremena u minute
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Helper funkcija za provjeru preklapanja vremena
+  const timesOverlap = (time1: string, time2: string, duration: number = RESERVATION_DURATION): boolean => {
+    const start1 = timeToMinutes(time1);
+    const end1 = start1 + duration;
+    const start2 = timeToMinutes(time2);
+    const end2 = start2 + duration;
+    
+    // Provjera preklapanja: vrijeme 1 se preklapa sa vrijeme 2 ako:
+    // - start1 je prije end2 I end1 je poslije start2
+    return start1 < end2 && end1 > start2;
+  };
+
+  const fetchTablesAndReservations = async (reservation: Reservation) => {
     try {
-      const response = await fetch(`${API_URL}/admin/appointments/${appointmentToReschedule.id}`, {
+      // Fetch all tables
+      const tablesResponse = await fetch(`${API_URL}/tables`);
+      const tablesData = await tablesResponse.json();
+      setTables(tablesData);
+
+      // Fetch all reservations for the same date
+      const reservationsResponse = await fetch(`${API_URL}/reservations?date=${reservation.date}`);
+      const reservationsData = await reservationsResponse.json();
+      
+      // Filtriraj stolove koji su zauzeti u vremenu koje se preklapa
+      const reservedIds = reservationsData
+        .filter((res: Reservation) => 
+          timesOverlap(res.time, reservation.time, RESERVATION_DURATION) && 
+          res.id !== reservation.id && 
+          res.status !== 'cancelled'
+        )
+        .map((res: Reservation) => res.tableId)
+        .filter((id: number | null) => id !== null);
+      setReservedTableIds(reservedIds);
+    } catch (error) {
+      console.error('Error fetching tables:', error);
+    }
+  };
+
+  const confirmTableAssignment = async () => {
+    if (!selectedReservation || !selectedTableId) return;
+    
+    setIsConfirming(true);
+    try {
+      await fetch(`${API_URL}/reservations/${selectedReservation.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          date: newDate,
-          time: newTime
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId: selectedTableId, status: 'approved' }),
+      });
+      
+      // Wait a bit to show the success animation
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      setShowTableModal(false);
+      setSelectedReservation(null);
+      setSelectedTableId(null);
+      fetchReservations();
+    } catch (error) {
+      console.error('Error assigning table:', error);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  const handleCreateReservation = async () => {
+    // Validacija
+    if (!newReservation.customerName.trim() || !newReservation.customerPhone.trim()) {
+      alert('Molimo unesite ime i telefon gosta');
+      return;
+    }
+
+    if (newReservation.numberOfGuests < 1) {
+      alert('Broj gostiju mora biti najmanje 1');
+      return;
+    }
+
+    // Validate email if provided
+    if (newReservation.customerEmail && !validateEmail(newReservation.customerEmail)) {
+      alert('Molimo unesite valjanu email adresu');
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      // Kreiraj rezervaciju sa statusom 'pending' - admin će odabrati stol nakon
+      const response = await fetch(`${API_URL}/reservations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: format(newReservation.date, 'yyyy-MM-dd'),
+          time: newReservation.time,
+          numberOfGuests: newReservation.numberOfGuests,
+          customerName: newReservation.customerName,
+          customerPhone: newReservation.customerPhone,
+          customerEmail: newReservation.customerEmail.trim() || null,
+          specialRequests: newReservation.specialRequests.trim() || null,
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.error || 'Greška prilikom prebacivanja termina');
-        return;
+      if (response.ok) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setShowNewReservationModal(false);
+        // Reset forme
+        setNewReservation({
+          date: new Date(),
+          time: '19:00',
+          numberOfGuests: 2,
+          customerName: '',
+          customerPhone: '',
+          customerEmail: '',
+          specialRequests: ''
+        });
+        fetchReservations();
+        alert('Rezervacija kreirana! Dodjelite stol u listi rezervacija.');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Greška pri kreiranju rezervacije');
       }
-
-      fetchAppointments();
-      setShowRescheduleModal(false);
-      setAppointmentToReschedule(null);
-      setSelectedAppointment(null);
-      setSuccessMessage('Termin uspješno prebačen!');
-      setShowSuccessModal(true);
-      setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (error) {
-      console.error('Error rescheduling appointment:', error);
-      alert('Greška prilikom prebacivanja termina');
+      console.error('Error creating reservation:', error);
+      alert('Greška pri kreiranju rezervacije');
+    } finally {
+      setIsConfirming(false);
     }
   };
 
-  const confirmDeleteAppointment = async () => {
-    if (!appointmentToDelete) return;
-
-    try {
-      await fetch(`${API_URL}/admin/appointments/${appointmentToDelete.id}`, {
-        method: 'DELETE',
-      });
-      fetchAppointments(); // Refresh data
-      setShowDeleteModal(false);
-      setAppointmentToDelete(null);
-      setSelectedAppointment(null); // Close details modal if open
-    } catch (error) {
-      console.error('Error deleting appointment:', error);
-    }
-  };
-
-  const getAppointmentsForDate = (date: Date) => {
-    return appointments
-      .filter(apt => {
-        const aptDate = new Date(apt.date);
-        return isSameDay(aptDate, date);
-      })
-      .sort((a, b) => {
-        // Sortiraj po vremenu (od najranijeg prema najkasnijem)
-        const [hoursA, minutesA] = a.time.split(':').map(Number);
-        const [hoursB, minutesB] = b.time.split(':').map(Number);
-        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
-      });
-  };
-
-  const getAppointmentsForToday = () => {
-    const today = new Date();
-    return appointments
-      .filter(apt => {
-        const aptDate = new Date(apt.date);
-        return isSameDay(aptDate, today);
-      })
-      .sort((a, b) => {
-        // Sortiraj po vremenu (od najranijeg prema najkasnijem)
-        const [hoursA, minutesA] = a.time.split(':').map(Number);
-        const [hoursB, minutesB] = b.time.split(':').map(Number);
-        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
-      });
-  };
-
-  const getStatusColor = (status: Appointment['status']) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'approved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusText = (status: Appointment['status']) => {
-    switch (status) {
-      case 'pending': return 'Na čekanju';
-      case 'approved': return 'Potvrđen';
-      case 'completed': return 'Završen';
-      case 'cancelled': return 'Otkazan';
-      default: return status;
-    }
-  };
-
-  const isCurrentOrUpcoming = (appointment: Appointment) => {
-    const now = new Date();
-    const aptDate = new Date(appointment.date);
-    const [hours, minutes] = appointment.time.split(':').map(Number);
-    aptDate.setHours(hours, minutes, 0, 0);
-    
-    const endTime = new Date(aptDate.getTime() + (appointment.service?.duration || 60) * 60000);
-    
-    // Trenutni termin je onaj koji je u tijeku (između početka i kraja) I potvrđen
-    if (now >= aptDate && now <= endTime && appointment.status === 'approved') {
-      return 'current';
-    }
-    
-    // Nadolazeći termin - razlikuj pending i approved
-    if (now < aptDate) {
-      if (appointment.status === 'pending') {
-        return 'pending'; // Na čekanju - žuto
-      }
-      return 'upcoming'; // Potvrđen - zeleno
-    }
-    
-    // Prošli termin
-    return 'past';
-  };
-
-  const tileContent = ({ date, view }: { date: Date; view: string }) => {
-    if (view === 'month') {
-      const dayAppointments = getAppointmentsForDate(date);
-      const approvedCount = dayAppointments.filter(a => a.status === 'approved' || a.status === 'completed').length;
-      const pendingCount = dayAppointments.filter(a => a.status === 'pending').length;
-      const holiday = isHoliday(date);
-      
-      return (
-        <div className="flex flex-col items-center justify-start h-10">
-          {holiday && (
-            <div className="w-2 h-2 bg-red-500 rounded-full mb-1" title={getHolidayName(date)}></div>
-          )}
-          <div className="flex items-center gap-1">
-            {approvedCount > 0 && (
-              <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                {approvedCount}
-              </div>
-            )}
-            {pendingCount > 0 && (
-              <div className="w-5 h-5 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                {pendingCount}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('adminLoggedIn');
     router.push('/');
   };
 
-  // Croatian locale formatters for react-calendar
-  const formatShortWeekday = (locale: string | undefined, date: Date) => {
-    return format(date, 'EEEEEE', { locale: hr }); // Po, Ut, Sr, Če, Pe, Su, Ne
+  // Get reservations filtered ONLY by date (for card counts)
+  const getDateFilteredReservations = () => {
+    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+    return reservations.filter(r => r.date.startsWith(selectedDateStr));
   };
 
-  const formatMonthYear = (locale: string | undefined, date: Date) => {
-    return format(date, 'LLLL yyyy.', { locale: hr }); // siječanj 2025.
+  const getFilteredReservations = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+    
+    console.log('=== FILTERING RESERVATIONS ===');
+    console.log('Total reservations:', reservations.length);
+    console.log('Selected date:', selectedDateStr);
+    console.log('Filter:', filter);
+    console.log('First 3 reservation dates from API:', reservations.slice(0, 3).map(r => ({ date: r.date, type: typeof r.date, customerName: r.customerName })));
+    
+    let filtered = reservations;
+    
+    // Filter by selected date FIRST
+    filtered = filtered.filter(r => {
+      const dateStr = typeof r.date === 'string' ? r.date : (r.date as any).toISOString?.() || r.date;
+      const matches = String(dateStr).startsWith(selectedDateStr);
+      if (matches) {
+        console.log('✓ Match found:', r.customerName, dateStr);
+      }
+      return matches;
+    });
+    console.log('After date filter:', filtered.length);
+    
+    // Then filter by status
+    switch (filter) {
+      case 'pending':
+        filtered = filtered.filter(r => r.status === 'pending');
+        break;
+      case 'approved':
+        filtered = filtered.filter(r => r.status === 'approved');
+        break;
+      case 'cancelled':
+        filtered = filtered.filter(r => r.status === 'cancelled');
+        break;
+      case 'today':
+        filtered = reservations.filter(r => String(r.date).startsWith(today));
+        break;
+      case 'all':
+      default:
+        // Already filtered by date
+        break;
+    }
+    
+    console.log('After status filter:', filtered.length);
+    return filtered;
   };
+
+  const getStatusColor = (status: Reservation['status']) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+      case 'approved': return 'bg-green-500/20 text-green-400 border-green-500/50';
+      case 'completed': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/50';
+    }
+  };
+
+  const getStatusText = (status: Reservation['status']) => {
+    switch (status) {
+      case 'pending': return 'Na čekanju';
+      case 'approved': return 'Potvrđeno';
+      case 'completed': return 'Završeno';
+      case 'cancelled': return 'Otkazano';
+    }
+  };
+
+  const filteredReservations = getFilteredReservations();
+  const pendingCount = reservations.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[#0A0A0A]">
       <Navigation />
-      <style jsx global>{`
-        .calendar-container .react-calendar {
-          width: 100%;
-          max-width: 100%;
-          background: white;
-          border: 1px solid rgb(229 231 235);
-          font-family: inherit;
-          border-radius: 0.5rem;
-          padding: 1rem;
-        }
-        .dark .calendar-container .react-calendar {
-          background: rgb(31 41 55);
-          border: 1px solid rgb(75 85 99);
-          color: rgb(243 244 246);
-        }
-        .calendar-container .react-calendar__navigation {
-          background: transparent;
-        }
-        .dark .calendar-container .react-calendar__navigation button {
-          color: rgb(243 244 246);
-        }
-        .calendar-container .react-calendar__navigation button:enabled:hover,
-        .calendar-container .react-calendar__navigation button:enabled:focus {
-          background-color: rgb(243 244 246);
-        }
-        .dark .calendar-container .react-calendar__navigation button:enabled:hover,
-        .dark .calendar-container .react-calendar__navigation button:enabled:focus {
-          background-color: rgb(55 65 81);
-        }
-        .calendar-container .react-calendar__month-view__weekdays__weekday {
-          color: rgb(107 114 128);
-        }
-        .dark .calendar-container .react-calendar__month-view__weekdays__weekday {
-          color: rgb(156 163 175);
-        }
-        .calendar-container .react-calendar__tile {
-          padding: 0.5em 0.5em;
-          position: relative;
-          background: white;
-          color: rgb(17 24 39);
-          height: 80px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-        }
-        .dark .calendar-container .react-calendar__tile {
-          background: rgb(31 41 55);
-          color: rgb(243 244 246);
-        }
-        .calendar-container .react-calendar__tile abbr {
-          display: block;
-          height: 24px;
-          line-height: 24px;
-        }
-        .calendar-container .react-calendar__tile:enabled:hover,
-        .calendar-container .react-calendar__tile:enabled:focus {
-          background: rgb(243 244 246);
-        }
-        .dark .calendar-container .react-calendar__tile:enabled:hover,
-        .dark .calendar-container .react-calendar__tile:enabled:focus {
-          background-color: rgb(55 65 81);
-        }
-        .calendar-container .react-calendar__tile--active {
-          background: #ec4899 !important;
-          color: white !important;
-        }
-        .calendar-container .react-calendar__tile--active:enabled:hover,
-        .calendar-container .react-calendar__tile--active:enabled:focus {
-          background: #db2777 !important;
-        }
-        .calendar-container .react-calendar__tile--holiday {
-          background: rgba(239, 68, 68, 0.1);
-        }
-        .dark .calendar-container .react-calendar__tile--holiday {
-          background: rgba(239, 68, 68, 0.2);
-        }
-        .calendar-container .react-calendar__tile--other-month {
-          opacity: 0.35 !important;
-          color: rgb(156 163 175) !important;
-        }
-        .dark .calendar-container .react-calendar__tile--other-month {
-          opacity: 0.35 !important;
-          color: rgb(107 114 128) !important;
-        }
-        .calendar-container .react-calendar__tile--past:not(.react-calendar__tile--other-month) {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
-        .dark .calendar-container .react-calendar__tile--past:not(.react-calendar__tile--other-month) {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
-        .calendar-container .react-calendar__tile--past.react-calendar__tile--other-month {
-          text-decoration: line-through;
-          opacity: 0.25 !important;
-        }
-        .dark .calendar-container .react-calendar__tile--past.react-calendar__tile--other-month {
-          text-decoration: line-through;
-          opacity: 0.25 !important;
-        }
-      `}</style>
-      <div className="pt-24 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div className="pt-32 pb-12 px-4">
+        <div className="container mx-auto max-w-7xl">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 flex items-center justify-between"
+          >
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Admin Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-400">Upravljanje terminima</p>
+              <h1 className="text-4xl font-bold text-[#D4AF37] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Admin Panel
+              </h1>
+              <p className="text-gray-400">Upravljanje rezervacijama</p>
             </div>
             <button
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="px-6 py-2.5 bg-[#1A1A1A] text-gray-400 hover:text-white border border-[#333] hover:border-[#D4AF37] rounded-lg transition-all uppercase tracking-wider text-sm"
             >
-              Odjavi se
+              Odjava
             </button>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Calendar Section */}
-            <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Kalendar</h2>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={fetchAppointments}
-                      disabled={loading}
-                      className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm flex items-center gap-1 sm:gap-2"
-                    >
-                      {loading ? (
-                        <svg className="animate-spin h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      )}
-                      <span className="hidden sm:inline">{loading ? 'Osvježavanje...' : 'Osvježi'}</span>
-                      <span className="inline sm:hidden">{loading ? 'Učitavanje...' : 'Osvježi'}</span>
-                    </button>
-                    {!isToday(selectedDate) && (
-                      <button
-                        onClick={() => setSelectedDate(new Date())}
-                        className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <span className="hidden sm:inline">Današnji datum</span>
-                        <span className="inline sm:hidden">Danas</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <div className="calendar-container">
-                    <Calendar
-                      onChange={(value) => setSelectedDate(value as Date)}
-                      value={selectedDate}
-                      activeStartDate={activeStartDate}
-                      onActiveStartDateChange={({ activeStartDate }) => {
-                        if (activeStartDate) setActiveStartDate(activeStartDate);
-                      }}
-                      showDoubleView={false}
-                      prev2Label={null}
-                      next2Label={null}
-                      tileContent={tileContent}
-                      tileClassName={({ date }) => {
-                        const isCurrentMonth = date.getMonth() === activeStartDate.getMonth() && date.getFullYear() === activeStartDate.getFullYear();
-                        const holiday = isHoliday(date);
-                        const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
-                        let classes = '';
-                        if (!isCurrentMonth) classes += 'react-calendar__tile--other-month ';
-                        if (holiday) classes += 'react-calendar__tile--holiday ';
-                        if (isPastDate) classes += 'react-calendar__tile--past ';
-                        return classes.trim();
-                      }}
-                      formatShortWeekday={formatShortWeekday}
-                      formatMonthYear={formatMonthYear}
-                      locale="hr-HR"
-                      className="border rounded shadow"
-                    />
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="mt-4 px-2 flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 rounded flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[10px] sm:text-xs font-bold">27</span>
-                    </div>
-                    <span className="whitespace-nowrap">Odabrani datum</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                      3
-                    </div>
-                    <span className="whitespace-nowrap">Potvrđeni termini</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                      2
-                    </div>
-                    <span className="whitespace-nowrap">Na čekanju</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
-                    <span className="whitespace-nowrap">Praznik</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="line-through opacity-50">15</span>
-                    <span className="whitespace-nowrap">Prošli datum</span>
-                  </div>
-                </div>
-
-                {/* Selected Date Appointments - Two Column Timeline Layout */}
-                <div className="mt-6">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    Termini za {format(selectedDate, 'dd.MM.yyyy')}
-                    {isHoliday(selectedDate) && (
-                      <span className="ml-2 text-sm text-red-500 dark:text-red-400">
-                        ({getHolidayName(selectedDate)})
-                      </span>
-                    )}
-                  </h3>
-                  
-                  {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          Potvrđeni termini
-                        </div>
-                        <div className="space-y-3">
-                          {[1, 2, 3].map((i) => (
-                            <div key={i} className="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 min-h-[100px] animate-pulse">
-                              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
-                              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                          Na čekanju
-                        </div>
-                        <div className="space-y-3">
-                          {[1, 2].map((i) => (
-                            <div key={i} className="rounded-lg border-2 border-yellow-300 dark:border-yellow-600 p-4 min-h-[100px] animate-pulse bg-yellow-50 dark:bg-yellow-900/20">
-                              <div className="h-4 bg-yellow-200 dark:bg-yellow-700 rounded w-1/3 mb-2"></div>
-                              <div className="h-3 bg-yellow-200 dark:bg-yellow-700 rounded w-1/2 mb-2"></div>
-                              <div className="h-3 bg-yellow-200 dark:bg-yellow-700 rounded w-2/3"></div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (() => {
-                    const allApts = getAppointmentsForDate(selectedDate);
-                    const approvedApts = allApts.filter(apt => apt.status === 'approved' || apt.status === 'completed');
-                    const pendingApts = allApts.filter(apt => apt.status === 'pending');
-                    
-                    if (allApts.length === 0) {
+          {/* Calendar with Reservation Counts */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass rounded-lg p-6 mb-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-[#D4AF37]">Odaberi datum</h2>
+              {format(selectedDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+                <button
+                  onClick={() => setSelectedDate(new Date())}
+                  className="px-4 py-2 bg-[#D4AF37] hover:bg-[#C4A137] text-black font-semibold rounded-lg transition-all text-sm"
+                >
+                  Vrati se na danas
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="shrink-0">
+                <style jsx global>{`
+                  .admin-calendar .react-datepicker {
+                    background: #1A1A1A;
+                    border: 1px solid #333;
+                    border-radius: 12px;
+                    font-family: inherit;
+                    padding: 8px;
+                  }
+                  .admin-calendar .react-datepicker__header {
+                    background: #0A0A0A;
+                    border-bottom: 1px solid #333;
+                    border-radius: 12px 12px 0 0;
+                    padding-top: 16px;
+                    padding-bottom: 12px;
+                  }
+                  .admin-calendar .react-datepicker__current-month {
+                    color: #D4AF37;
+                    font-weight: 600;
+                    font-size: 1.125rem;
+                    margin-bottom: 12px;
+                  }
+                  .admin-calendar .react-datepicker__day-names {
+                    margin-bottom: 8px;
+                  }
+                  .admin-calendar .react-datepicker__day-name {
+                    color: #888;
+                    font-size: 1rem;
+                    width: 3.25rem;
+                    line-height: 3.25rem;
+                    margin: 0.25rem;
+                    font-weight: 500;
+                  }
+                  .admin-calendar .react-datepicker__day {
+                    color: #999;
+                    border-radius: 10px;
+                    transition: all 0.2s;
+                    width: 3.25rem;
+                    height: 3.25rem;
+                    line-height: 3.25rem;
+                    margin: 0.25rem;
+                    font-size: 1rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                  }
+                  .admin-calendar .react-datepicker__day:hover {
+                    background: #2A2A2A;
+                    color: #fff;
+                    transform: scale(1.05);
+                  }
+                  .admin-calendar .react-datepicker__day--selected {
+                    background: #D4AF37 !important;
+                    color: #000 !important;
+                    font-weight: 700;
+                    transform: scale(1.1);
+                  }
+                  .admin-calendar .react-datepicker__day--today {
+                    border: 2px solid #D4AF37;
+                    color: #D4AF37;
+                    font-weight: 600;
+                  }
+                  .admin-calendar .react-datepicker__day--disabled {
+                    color: #444;
+                    cursor: not-allowed;
+                  }
+                  .admin-calendar .react-datepicker__navigation {
+                    top: 16px;
+                    width: 2.5rem;
+                    height: 2.5rem;
+                  }
+                  .admin-calendar .react-datepicker__navigation-icon::before {
+                    border-color: #D4AF37;
+                    border-width: 2px 2px 0 0;
+                    width: 10px;
+                    height: 10px;
+                  }
+                  .admin-calendar .react-datepicker__day-has-reservations {
+                    position: relative;
+                  }
+                  .admin-calendar .react-datepicker__day-has-reservations::after {
+                    content: attr(data-count);
+                    position: absolute;
+                    bottom: 3px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #D4AF37;
+                    color: #000;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    padding: 2px 5px;
+                    border-radius: 5px;
+                    min-width: 18px;
+                    text-align: center;
+                  }
+                `}</style>
+                <div className="admin-calendar">
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date: Date | null) => date && setSelectedDate(date)}
+                    inline
+                    locale={hr}
+                    dayClassName={(date) => {
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      const dayReservations = reservations.filter(r => r.date.startsWith(dateStr));
+                      return dayReservations.length > 0 ? 'react-datepicker__day-has-reservations' : '';
+                    }}
+                    renderDayContents={(day, date) => {
+                      if (!date) return day;
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      const dayReservations = reservations.filter(r => r.date.startsWith(dateStr));
                       return (
-                        <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                          Nema termina za odabrani datum
-                        </p>
+                        <span data-count={dayReservations.length || ''}>
+                          {day}
+                        </span>
                       );
-                    }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="bg-[#1A1A1A] border border-[#333] rounded-lg p-6 h-full flex flex-col">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    {format(selectedDate, 'd. MMMM yyyy.', { locale: hr })}
+                  </h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
+                    {/* Nova Rezervacija Karton */}
+                    <motion.button
+                      onClick={() => {
+                        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+                        router.push(`/admin/new-reservation?date=${dateStr}`);
+                      }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="bg-linear-to-br from-[#D4AF37] to-[#C4A137] hover:from-[#E8D89F] hover:to-[#D4AF37] rounded-xl p-6 border-2 border-[#D4AF37] transition-all shadow-lg hover:shadow-[#D4AF37]/30 group"
+                    >
+                      <div className="flex flex-col items-center justify-center h-full gap-3">
+                        <svg className="w-14 h-14 text-black group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <div className="text-sm font-bold text-black uppercase tracking-wider">Nova Rezervacija</div>
+                      </div>
+                    </motion.button>
                     
-                    // Get unique time slots that have appointments (approved or pending)
-                    const occupiedTimeSlots = new Set([
-                      ...approvedApts.map(apt => apt.time),
-                      ...pendingApts.map(apt => apt.time)
-                    ]);
-                    
-                    const timeSlots = Array.from(occupiedTimeSlots).sort();
-                    
-                    // Map appointments to time slots
-                    const approvedMap = new Map(approvedApts.map(apt => [apt.time, apt]));
-                    const pendingMap = new Map(pendingApts.map(apt => [apt.time, apt]));
-                    
-                    return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Left Column - Approved/Confirmed Appointments */}
-                        <div>
-                          <div className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Potvrđeni termini
-                          </div>
-                          <div className="space-y-3">
-                            {timeSlots.map((timeSlot) => {
-                              const appointment = approvedMap.get(timeSlot);
-                              if (!appointment) {
-                                return (
-                                  <div key={timeSlot} className="min-h-[100px] rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs p-2">
-                                    {timeSlot} - Slobodno
-                                  </div>
-                                );
-                              }
-                              
-                              const timeStatus = isCurrentOrUpcoming(appointment);
-                              return (
-                                <div
-                                  key={appointment.id}
-                                  className={`rounded-lg p-3 md:p-4 cursor-pointer transition-all duration-500 ease-in-out min-h-[100px] appointment-slide-in ${
-                                    timeStatus === 'current' 
-                                      ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500 shadow-lg animate-pulse' 
-                                      : timeStatus === 'upcoming'
-                                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700'
-                                      : 'bg-gray-50 dark:bg-gray-700 opacity-60'
-                                  } hover:shadow-md hover:scale-[1.02]`}
-                                  onClick={() => setSelectedAppointment(appointment)}
-                                >
-                                  <div className="flex flex-col gap-2">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          {timeStatus === 'current' && (
-                                            <span className="relative flex h-2 w-2 flex-shrink-0">
-                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                                            </span>
-                                          )}
-                                          <p className={`font-semibold text-sm truncate ${
-                                            timeStatus === 'current' 
-                                              ? 'text-blue-900 dark:text-blue-100' 
-                                              : 'text-gray-900 dark:text-white'
-                                          }`}>
-                                            {appointment.time}
-                                          </p>
-                                        </div>
-                                        <p className="text-sm font-medium mt-1 truncate">{appointment.customerName}</p>
-                                      </div>
-                                      <span className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ml-2 flex-shrink-0 ${getStatusColor(appointment.status)}`}>
-                                        {getStatusText(appointment.status)}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                                      {appointment.service?.name} ({appointment.service?.duration} min)
-                                    </p>
-                                    {timeStatus === 'current' && (
-                                      <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                                        🔴 U TIJEKU
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Right Column - Pending Appointments */}
-                        <div>
-                          <div className="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                            Na čekanju ({pendingApts.length})
-                          </div>
-                          <div className="space-y-3">
-                            {timeSlots.map((timeSlot) => {
-                              const appointment = pendingMap.get(timeSlot);
-                              if (!appointment) {
-                                return (
-                                  <div key={`pending-${timeSlot}`} className="min-h-[100px] hidden md:block"></div>
-                                );
-                              }
-                              
-                              return (
-                                <div
-                                  key={appointment.id}
-                                  className="rounded-lg p-3 md:p-4 cursor-pointer transition-all duration-500 ease-in-out transform hover:scale-105 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 hover:shadow-lg min-h-[100px] appointment-slide-in"
-                                  onClick={() => setSelectedAppointment(appointment)}
-                                >
-                                  <div className="flex flex-col gap-2">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-yellow-500 text-base flex-shrink-0">⏳</span>
-                                          <p className="font-semibold text-sm text-yellow-900 dark:text-yellow-100 truncate">
-                                            {appointment.time}
-                                          </p>
-                                        </div>
-                                        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mt-1 truncate">
-                                          {appointment.customerName}
-                                        </p>
-                                      </div>
-                                      <span className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ml-2 flex-shrink-0 ${getStatusColor(appointment.status)}`}>
-                                        {getStatusText(appointment.status)}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                                      {appointment.service?.name} ({appointment.service?.duration} min)
-                                    </p>
-                                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                                      → Čeka potvrdu
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Today's Appointments & Actions */}
-            <div className="space-y-6">
-              {/* Today's Appointments */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Današnji termini
-                </h2>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {loading ? (
-                    <>
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 animate-pulse">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
-                          </div>
-                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
-                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                        </div>
-                      ))}
-                    </>
-                  ) : getAppointmentsForToday().map((appointment) => {
-                    const timeStatus = isCurrentOrUpcoming(appointment);
-                    return (
-                      <div
-                        key={appointment.id}
-                        className={`rounded-lg p-3 cursor-pointer transition-all ${
-                          timeStatus === 'current' 
-                            ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500 animate-pulse' 
-                            : timeStatus === 'pending'
-                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-600'
-                            : timeStatus === 'upcoming'
-                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700'
-                            : 'bg-gray-50 dark:bg-gray-700 opacity-60'
-                        } hover:shadow-md`}
-                        onClick={() => setSelectedAppointment(appointment)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              {timeStatus === 'current' && (
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                                </span>
-                              )}
-                              {timeStatus === 'pending' && (
-                                <span className="text-yellow-500 text-xs">⏳</span>
-                              )}
-                              <p className={`font-medium text-sm ${
-                                timeStatus === 'current' 
-                                  ? 'text-blue-900 dark:text-blue-100 font-bold' 
-                                  : timeStatus === 'pending'
-                                  ? 'text-yellow-900 dark:text-yellow-100'
-                                  : 'text-gray-900 dark:text-white'
-                              }`}>
-                                {appointment.time}
-                              </p>
-                            </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              {appointment.customerName}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(appointment.status)}`}>
-                            {getStatusText(appointment.status)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {!loading && getAppointmentsForToday().length === 0 && (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                      Nema termina danas
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Statistika
-                </h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Ukupno termina:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{appointments.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Na čekanju:</span>
-                    <span className="font-semibold text-yellow-600">{appointments.filter(a => a.status === 'pending').length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Potvrđeni:</span>
-                    <span className="font-semibold text-green-600">{appointments.filter(a => a.status === 'approved').length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Završeni:</span>
-                    <span className="font-semibold text-blue-600">{appointments.filter(a => a.status === 'completed').length}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Appointment Details Modal */}
-          {selectedAppointment && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      Detalji termina
-                    </h3>
-                    <button
-                      onClick={() => setSelectedAppointment(null)}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    <motion.button
+                      onClick={() => setFilter('all')}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`rounded-xl p-5 border-2 transition-all text-left shadow-lg relative overflow-hidden group ${
+                        filter === 'all' 
+                          ? 'bg-linear-to-br from-[#1A1A1A] to-[#0A0A0A] border-[#D4AF37] shadow-[#D4AF37]/30' 
+                          : 'bg-[#0A0A0A] border-[#333] hover:border-[#D4AF37] hover:shadow-[#D4AF37]/20'
+                      }`}
                     >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Klijent</label>
-                      <p className="text-gray-900 dark:text-white">{selectedAppointment.customerName}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                      <p className="text-gray-900 dark:text-white">{selectedAppointment.customerEmail}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefon</label>
-                      <p className="text-gray-900 dark:text-white">{selectedAppointment.customerPhone}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Usluga</label>
-                      <p className="text-gray-900 dark:text-white">{selectedAppointment.service?.name}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Datum i vrijeme</label>
-                      <p className="text-gray-900 dark:text-white">
-                        {format(new Date(selectedAppointment.date), 'dd.MM.yyyy')} u {selectedAppointment.time}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Trajanje</label>
-                      <p className="text-gray-900 dark:text-white">{selectedAppointment.service?.duration} minuta</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Cijena</label>
-                      <p className="text-gray-900 dark:text-white">{selectedAppointment.service?.price}€</p>
-                    </div>
-
-                    {selectedAppointment.notes && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Napomena</label>
-                        <p className="text-gray-900 dark:text-white">{selectedAppointment.notes}</p>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          <div className="text-3xl font-bold text-[#D4AF37]">
+                            {getDateFilteredReservations().length}
+                          </div>
+                        </div>
+                        <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Ukupno rezervacija</div>
                       </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(selectedAppointment.status)}`}>
-                        {getStatusText(selectedAppointment.status)}
-                      </span>
-                    </div>
-
-                    {selectedAppointment.status === 'pending' && (
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                          Pregled termina u kalendaru
-                        </label>
-                        <div className="w-full flex justify-center">
-                          <div className="calendar-container">
-                            <Calendar
-                              value={new Date(selectedAppointment.date)}
-                              tileClassName={({ date }) => {
-                                const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
-                                const holiday = isHoliday(date);
-                                const isSelectedDate = date.toDateString() === new Date(selectedAppointment.date).toDateString();
-                                let classes = '';
-                                if (holiday) classes += 'react-calendar__tile--holiday ';
-                                if (isPastDate) classes += 'react-calendar__tile--past ';
-                                if (isSelectedDate) classes += 'react-calendar__tile--active ';
-                                return classes.trim();
-                              }}
-                              tileContent={({ date, view }) => {
-                                if (view === 'month') {
-                                  const appts = getAppointmentsForDate(date);
-                                  const approvedCount = appts.filter(a => a.status === 'approved' || a.status === 'completed').length;
-                                  const pendingCount = appts.filter(a => a.status === 'pending').length;
-                                  return (
-                                    <div style={{ marginTop: '4px' }}>
-                                      {approvedCount > 0 && (
-                                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
-                                          {approvedCount}
-                                        </span>
-                                      )}
-                                      {pendingCount > 0 && (
-                                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-yellow-500 rounded-full ml-1">
-                                          {pendingCount}
-                                        </span>
-                                      )}
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                              formatShortWeekday={formatShortWeekday}
-                              formatMonthYear={formatMonthYear}
-                              locale="hr-HR"
-                              className="border rounded shadow"
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* Legend */}
-                        <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-5 h-5 bg-pink-500 rounded flex items-center justify-center">
-                              <span className="text-white text-[10px] font-bold">27</span>
-                            </div>
-                            <span>Ovaj termin</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-4 h-4 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                              3
-                            </div>
-                            <span>Potvrđeni</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-4 h-4 bg-yellow-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                              2
-                            </div>
-                            <span>Na čekanju</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                            <span>Praznik</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="line-through opacity-50">15</span>
-                            <span>Prošli datum</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2 mt-6">
-                    {selectedAppointment.status === 'pending' && (
-                      <>
-                        {/* First row on mobile - Potvrdi i Odbij */}
-                        <div className="flex gap-2 w-full">
-                          <button
-                            onClick={() => {
-                              updateAppointmentStatus(selectedAppointment.id, 'approved');
-                              setSelectedAppointment(null);
-                            }}
-                            className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                          >
-                            Potvrdi
-                          </button>
-                          <button
-                            onClick={() => {
-                              updateAppointmentStatus(selectedAppointment.id, 'cancelled');
-                              setSelectedAppointment(null);
-                            }}
-                            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                          >
-                            Odbij
-                          </button>
-                        </div>
-                        {/* Second row on mobile - Prebaci i Obriši */}
-                        <div className="flex gap-2 w-full">
-                          <button
-                            onClick={() => rescheduleAppointment(selectedAppointment)}
-                            className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                          >
-                            Prebaci termin
-                          </button>
-                          <button
-                            onClick={() => {
-                              deleteAppointment(selectedAppointment.id);
-                              setSelectedAppointment(null);
-                            }}
-                            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                          >
-                            Obriši
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {selectedAppointment.status === 'approved' && (
-                      <>
-                        <button
-                          onClick={() => {
-                            updateAppointmentStatus(selectedAppointment.id, 'completed');
-                            setSelectedAppointment(null);
-                          }}
-                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                        >
-                          Označi kao završeno
-                        </button>
-                        <button
-                          onClick={() => rescheduleAppointment(selectedAppointment)}
-                          className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                        >
-                          Prebaci termin
-                        </button>
-                        <button
-                          onClick={() => {
-                            deleteAppointment(selectedAppointment.id);
-                            setSelectedAppointment(null);
-                          }}
-                          className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
-                        >
-                          Obriši
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Zatvori button */}
-                  <div className="mt-3">
-                    <button
-                      onClick={() => setSelectedAppointment(null)}
-                      className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      Zatvori
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showDeleteModal && appointmentToDelete && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full">
-                <div className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Brisanje termina
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Jeste li sigurni da želite obrisati termin za <strong>{appointmentToDelete.customerName}</strong> zakazan za {format(new Date(appointmentToDelete.date), 'dd.MM.yyyy')} u {appointmentToDelete.time}?
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      Ova akcija se ne može poništiti.
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowDeleteModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
-                    >
-                      Odustani
-                    </button>
-                    <button
-                      onClick={confirmDeleteAppointment}
-                      className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                    >
-                      Obriši
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Reschedule Modal */}
-          {showRescheduleModal && appointmentToReschedule && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full my-4 max-h-[95vh] overflow-y-auto">
-                <div className="p-4 sm:p-6">
-                  <div className="flex justify-between items-start mb-3 sm:mb-4">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                      Prebaci termin
-                    </h3>
-                    <button
-                      onClick={() => setShowRescheduleModal(false)}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
-                    >
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="mb-3 sm:mb-4 space-y-2">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      Prebacivanje termina za: <strong>{appointmentToReschedule.customerName}</strong>
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      Usluga: <strong>{appointmentToReschedule.service?.name}</strong>
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      Trenutni termin: <strong>{format(new Date(appointmentToReschedule.date), 'dd.MM.yyyy')} u {appointmentToReschedule.time}</strong>
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Novi datum
-                      </label>
-                      <div className="w-full flex justify-center overflow-x-auto">
-                        <div className="calendar-container w-full">
-                          <Calendar
-                            onChange={(value) => {
-                              if (value instanceof Date) {
-                                const year = value.getFullYear();
-                                const month = String(value.getMonth() + 1).padStart(2, '0');
-                                const day = String(value.getDate()).padStart(2, '0');
-                                const dateStr = `${year}-${month}-${day}`;
-                                setNewDate(dateStr);
-                                fetchAvailableSlots(dateStr, appointmentToReschedule.serviceId, appointmentToReschedule.id);
-                              }
-                            }}
-                            value={newDate ? new Date(newDate + 'T12:00:00') : new Date()}
-                            minDate={new Date()}
-                            activeStartDate={activeStartDate}
-                            onActiveStartDateChange={({ activeStartDate }) => {
-                              if (activeStartDate) setActiveStartDate(activeStartDate);
-                            }}
-                            showDoubleView={false}
-                            prev2Label={null}
-                            next2Label={null}
-                            tileClassName={({ date }) => {
-                              const isCurrentMonth = date.getMonth() === activeStartDate.getMonth() && date.getFullYear() === activeStartDate.getFullYear();
-                              const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
-                              const holiday = isHoliday(date);
-                              let classes = '';
-                              if (!isCurrentMonth) classes += 'react-calendar__tile--other-month ';
-                              if (holiday) classes += 'react-calendar__tile--holiday ';
-                              if (isPastDate) classes += 'react-calendar__tile--past ';
-                              return classes.trim();
-                            }}
-                            tileContent={({ date, view }) => {
-                              if (view === 'month') {
-                                const appts = getAppointmentsForDate(date);
-                                const approvedCount = appts.filter(a => a.status === 'approved' || a.status === 'completed').length;
-                                const pendingCount = appts.filter(a => a.status === 'pending').length;
-                                const holiday = isHoliday(date);
-                                return (
-                                  <div className="flex flex-col items-center justify-start h-10">
-                                    {holiday && (
-                                      <div className="w-2 h-2 bg-red-500 rounded-full mb-1" title={getHolidayName(date)}></div>
-                                    )}
-                                    <div className="flex items-center gap-1">
-                                      {approvedCount > 0 && (
-                                        <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                                          {approvedCount}
-                                        </div>
-                                      )}
-                                      {pendingCount > 0 && (
-                                        <div className="w-5 h-5 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                                          {pendingCount}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                            formatShortWeekday={formatShortWeekday}
-                            formatMonthYear={formatMonthYear}
-                            locale="hr-HR"
-                            className="border rounded shadow"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Legend */}
-                      <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 rounded flex items-center justify-center">
-                            <span className="text-white text-[8px] sm:text-[10px] font-bold">27</span>
-                          </div>
-                          <span className="whitespace-nowrap">Odabrani</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-bold">
-                            3
-                          </div>
-                          <span className="whitespace-nowrap">Potvrđeni</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-yellow-500 text-white text-[8px] sm:text-[10px] rounded-full flex items-center justify-center font-bold">
-                            2
-                          </div>
-                          <span className="whitespace-nowrap">Čekanju</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span className="whitespace-nowrap">Praznik</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <span className="line-through opacity-50">15</span>
-                          <span className="whitespace-nowrap">Prošli</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Novo vrijeme
-                      </label>
-                      {availableSlots.length > 0 ? (
-                        <select
-                          value={newTime}
-                          onChange={(e) => setNewTime(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
-                        >
-                          <option value="">Odaberi vrijeme</option>
-                          {availableSlots.map(slot => (
-                            <option key={slot} value={slot}>{slot}</option>
-                          ))}
-                        </select>
-                      ) : newDate ? (
-                        <p className="text-sm text-red-500">Nema slobodnih termina za odabrani datum</p>
-                      ) : (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Odaberi datum da vidiš slobodne termine</p>
+                      {filter === 'all' && (
+                        <motion.div 
+                          layoutId="activeFilter"
+                          className="absolute inset-0 bg-[#D4AF37]/5 rounded-xl"
+                        />
                       )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
-                    <button
-                      onClick={() => setShowRescheduleModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                    </motion.button>
+                    
+                    <motion.div
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="rounded-xl p-5 border-2 border-[#333] bg-linear-to-br from-[#1A1A1A] to-[#0A0A0A] shadow-lg hover:shadow-blue-400/20 relative overflow-hidden group transition-all cursor-default flex flex-col justify-center"
                     >
-                      Odustani
-                    </button>
-                    <button
-                      onClick={confirmReschedule}
-                      disabled={!newDate || !newTime}
-                      className="flex-1 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <div className="text-3xl font-bold text-blue-400">
+                            {getDateFilteredReservations().filter(r => r.status === 'approved').reduce((sum, r) => sum + r.numberOfGuests, 0)}
+                          </div>
+                        </div>
+                        <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Ukupno gostiju</div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.button
+                      onClick={() => setFilter('approved')}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`rounded-xl p-5 border-2 transition-all text-left shadow-lg relative overflow-hidden group ${
+                        filter === 'approved' 
+                          ? 'bg-linear-to-br from-[#1A1A1A] to-[#0A0A0A] border-green-400 shadow-green-400/30' 
+                          : 'bg-[#0A0A0A] border-[#333] hover:border-green-400 hover:shadow-green-400/20'
+                      }`}
                     >
-                      Prebaci
-                    </button>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="text-3xl font-bold text-green-400">
+                            {getDateFilteredReservations().filter(r => r.status === 'approved').length}
+                          </div>
+                        </div>
+                        <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Potvrđeno</div>
+                      </div>
+                      {filter === 'approved' && (
+                        <motion.div 
+                          layoutId="activeFilter"
+                          className="absolute inset-0 bg-green-400/5 rounded-xl"
+                        />
+                      )}
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={() => setFilter('pending')}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`rounded-xl p-5 border-2 transition-all text-left shadow-lg relative overflow-hidden group ${
+                        filter === 'pending' 
+                          ? 'bg-linear-to-br from-[#1A1A1A] to-[#0A0A0A] border-orange-500 shadow-orange-500/30' 
+                          : 'bg-[#0A0A0A] border-[#333] hover:border-orange-500 hover:shadow-orange-500/20'
+                      }`}
+                    >
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="text-3xl font-bold text-orange-500">
+                            {getDateFilteredReservations().filter(r => r.status === 'pending').length}
+                          </div>
+                        </div>
+                        <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Na čekanju</div>
+                      </div>
+                      {filter === 'pending' && (
+                        <motion.div 
+                          layoutId="activeFilter"
+                          className="absolute inset-0 bg-orange-500/5 rounded-xl"
+                        />
+                      )}
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={() => setFilter('cancelled')}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`rounded-xl p-5 border-2 transition-all text-left shadow-lg relative overflow-hidden group ${
+                        filter === 'cancelled' 
+                          ? 'bg-linear-to-br from-[#1A1A1A] to-[#0A0A0A] border-red-500 shadow-red-500/30' 
+                          : 'bg-[#0A0A0A] border-[#333] hover:border-red-500 hover:shadow-red-500/20'
+                      }`}
+                    >
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="text-3xl font-bold text-red-500">
+                            {getDateFilteredReservations().filter(r => r.status === 'cancelled').length}
+                          </div>
+                        </div>
+                        <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Otkazano</div>
+                      </div>
+                      {filter === 'cancelled' && (
+                        <motion.div 
+                          layoutId="activeFilter"
+                          className="absolute inset-0 bg-red-500/5 rounded-xl"
+                        />
+                      )}
+                    </motion.button>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </motion.div>
 
-          {/* Success Modal */}
-          {showSuccessModal && (
-            <div className="fixed inset-0 flex items-center justify-center p-4 z-[60] pointer-events-none">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full pointer-events-auto transform animate-bounce-in border-2 border-green-500">
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
+          {/* Reservations List */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#D4AF37] border-r-transparent"></div>
+            </div>
+          ) : filteredReservations.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="glass rounded-lg p-12 text-center"
+            >
+              <p className="text-gray-400 text-lg">Nema rezervacija</p>
+            </motion.div>
+          ) : (
+            <div className="space-y-4">
+              {filteredReservations.map((reservation, index) => (
+                <motion.div
+                  key={reservation.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="glass rounded-lg p-6 hover:border-[#D4AF37] transition-all"
+                >
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    {/* Info */}
+                    <div className="flex-1 min-w-[250px]">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="text-xl font-bold text-white">{reservation.customerName}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${getStatusColor(reservation.status)}`}>
+                          {getStatusText(reservation.status)}
+                        </span>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#D4AF37]">📅</span>
+                          <span>{new Date(reservation.date).toLocaleDateString('hr-HR')} u {reservation.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#D4AF37]">👥</span>
+                          <span>{reservation.numberOfGuests} {reservation.numberOfGuests === 1 ? 'osoba' : reservation.numberOfGuests <= 4 ? 'osobe' : 'osoba'}</span>
+                        </div>
+                        {reservation.table ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#D4AF37]">🪑</span>
+                            <span>Stol #{reservation.table.number}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-yellow-400">⚠️</span>
+                            <span className="text-yellow-400 text-xs">Stol nije dodijeljen</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#D4AF37]">📧</span>
+                          <span>{reservation.customerEmail}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#D4AF37]">📱</span>
+                          <span>{formatPhoneNumber(reservation.customerPhone)}</span>
+                          <a 
+                            href={`tel:${reservation.customerPhone}`}
+                            className="ml-2 px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30 rounded text-xs font-semibold uppercase tracking-wider transition-all"
+                          >
+                            Pozovi
+                          </a>
+                        </div>
+                        {reservation.specialRequests && (
+                          <div className="flex items-start gap-2 mt-2 pt-2 border-t border-[#333]">
+                            <span className="text-[#D4AF37]">💬</span>
+                            <span className="italic">{reservation.specialRequests}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2 min-w-[120px]">
+                      {reservation.status === 'pending' && (
+                        <>
+                          {!reservation.tableId ? (
+                            <button
+                              onClick={() => openTableSelection(reservation)}
+                              className="px-4 py-2 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/50 hover:bg-[#D4AF37]/30 rounded-lg transition-all text-sm font-semibold uppercase tracking-wider"
+                            >
+                              Potvrdi rezervaciju
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => updateStatus(reservation.id, 'approved')}
+                              className="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30 rounded-lg transition-all text-sm font-semibold uppercase tracking-wider"
+                            >
+                              Potvrdi
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {reservation.status === 'approved' && (
+                        <button
+                          onClick={() => updateStatus(reservation.id, 'completed')}
+                          className="px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/50 hover:bg-blue-500/30 rounded-lg transition-all text-sm font-semibold uppercase tracking-wider"
+                        >
+                          Završi
+                        </button>
+                      )}
+                      {reservation.status === 'cancelled' && (
+                        <>
+                          <button
+                            onClick={() => openTableSelection(reservation)}
+                            className="px-4 py-2 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/50 hover:bg-[#D4AF37]/30 rounded-lg transition-all text-sm font-semibold uppercase tracking-wider"
+                          >
+                            Reaktiviraj
+                          </button>
+                        </>
+                      )}
+                      {(reservation.status === 'pending' || reservation.status === 'approved') && (
+                        <button
+                          onClick={() => requestCancelReservation(reservation)}
+                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30 rounded-lg transition-all text-sm font-semibold uppercase tracking-wider"
+                        >
+                          Otkaži
+                        </button>
+                      )}
+                      <button
+                        onClick={() => requestDeleteReservation(reservation)}
+                        className="px-4 py-2 bg-[#1A1A1A] text-gray-400 border border-[#333] hover:border-red-500 hover:text-red-400 rounded-lg transition-all text-sm font-semibold uppercase tracking-wider"
+                      >
+                        Obriši
+                      </button>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Uspjeh!</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{successMessage}</p>
-                  </div>
-                  <button
-                    onClick={() => setShowSuccessModal(false)}
-                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Table Selection Modal */}
+      {showTableModal && selectedReservation && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          {/* Loading Overlay */}
+          {isConfirming && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md z-10 flex items-center justify-center"
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-[#1A1A1A] border-2 border-[#D4AF37] rounded-2xl p-8 flex flex-col items-center gap-4"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full"
+                />
+                <div className="text-center">
+                  <p className="text-[#D4AF37] font-bold text-xl mb-1">Potvrđujem rezervaciju...</p>
+                  <p className="text-gray-400 text-sm">Spremam podatke u bazu</p>
+                </div>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.8 }}
+                  className="h-1 bg-[#D4AF37] rounded-full"
+                  style={{ maxWidth: '200px' }}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1A1A1A] rounded-lg border border-[#333] w-full max-w-6xl max-h-[95vh] overflow-y-auto relative"
+          >
+            <div className="p-4 sm:p-6 border-b border-[#333] sticky top-0 bg-[#1A1A1A] z-10">
+              <div className="flex items-start justify-between mb-3 sm:mb-4 gap-3">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#D4AF37] mb-1 sm:mb-2 truncate" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    Odaberite Stol
+                  </h2>
+                  <p className="text-gray-400 text-xs sm:text-sm truncate">
+                    {selectedReservation.customerName} • {new Date(selectedReservation.date).toLocaleDateString('hr-HR')} u {selectedReservation.time} • {selectedReservation.numberOfGuests} {selectedReservation.numberOfGuests === 1 ? 'osoba' : selectedReservation.numberOfGuests <= 4 ? 'osobe' : 'osoba'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowTableModal(false);
+                    setSelectedReservation(null);
+                    setSelectedTableId(null);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors shrink-0"
+                >
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {selectedTableId && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="flex-1 bg-[#0A0A0A] border border-[#D4AF37] rounded-lg p-2.5 sm:p-3">
+                    <p className="text-[#D4AF37] font-semibold text-sm sm:text-base">
+                      Odabran stol: #{tables.find(t => t.id === selectedTableId)?.number} ({tables.find(t => t.id === selectedTableId)?.capacity} osoba)
+                    </p>
+                  </div>
+                  <button
+                    onClick={confirmTableAssignment}
+                    disabled={isConfirming}
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#D4AF37] hover:bg-[#C4A137] text-black font-bold rounded-lg transition-all uppercase tracking-wider text-sm sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
+                  >
+                    {isConfirming ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-5 h-5 border-2 border-black border-t-transparent rounded-full"
+                        />
+                        <span>Spremam...</span>
+                        <motion.div
+                          initial={{ x: '-100%' }}
+                          animate={{ x: '200%' }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                          className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Potvrdi Rezervaciju</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 sm:p-6">
+              <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                {/* Visual Table Plan */}
+                <div className="flex-1 bg-[#0A0A0A] rounded-lg p-3 sm:p-4 relative overflow-hidden">
+                  <style jsx>{`
+                    .table-hover rect,
+                    .table-hover circle {
+                      transition: stroke 0.2s ease;
+                    }
+                    .table-hover:hover rect,
+                    .table-hover:hover circle {
+                      stroke: #22c55e !important;
+                    }
+                  `}</style>
+                  <div className="w-full" style={{ aspectRatio: '4/3' }}>
+                    <svg viewBox="0 0 800 600" className="w-full h-full">
+                      <rect x="20" y="20" width="760" height="560" fill="#0A0A0A" stroke="#333" strokeWidth="2" rx="8"/>
+                      <text x="400" y="60" textAnchor="middle" fill="#D4AF37" fontSize="20" fontWeight="bold">
+                        Plan Restorana
+                      </text>
+
+                      {tables.map((table) => {
+                        const isReserved = reservedTableIds.includes(table.id);
+                        const isAvailable = !isReserved && table.capacity >= selectedReservation.numberOfGuests;
+                        const isSelected = selectedTableId === table.id;
+                        const isRound = table.shape === 'round';
+                        
+                        return (
+                          <g
+                            key={table.id}
+                            onClick={() => isAvailable && setSelectedTableId(table.id)}
+                            style={{ cursor: isAvailable ? 'pointer' : 'not-allowed' }}
+                            className={isAvailable ? 'table-hover' : ''}
+                          >
+                            {isRound ? (
+                              <circle
+                                cx={table.x}
+                                cy={table.y}
+                                r="38"
+                                fill={isSelected ? '#D4AF37' : isAvailable ? '#1A1A1A' : '#0A0A0A'}
+                                stroke={isSelected ? '#FFF' : isAvailable ? '#D4AF37' : '#555'}
+                                strokeWidth={isSelected ? 3.5 : 2.5}
+                                opacity={isAvailable ? 1 : 0.4}
+                              />
+                            ) : (
+                              <rect
+                                x={table.x - 44}
+                                y={table.y - 34}
+                                width="88"
+                                height="68"
+                                rx="5"
+                                fill={isSelected ? '#D4AF37' : isAvailable ? '#1A1A1A' : '#0A0A0A'}
+                                stroke={isSelected ? '#FFF' : isAvailable ? '#D4AF37' : '#555'}
+                                strokeWidth={isSelected ? 3.5 : 2.5}
+                                opacity={isAvailable ? 1 : 0.4}
+                              />
+                            )}
+                            <text
+                              x={table.x}
+                              y={table.y - 3}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fill={isSelected ? '#000' : isAvailable ? '#D4AF37' : '#555'}
+                              fontSize="18"
+                              fontWeight="bold"
+                            >
+                              {table.number}
+                            </text>
+                            <text
+                              x={table.x}
+                              y={table.y + 16}
+                              textAnchor="middle"
+                              fill={isSelected ? '#000' : isAvailable ? '#FFF' : '#555'}
+                              fontSize="12"
+                              fontWeight="500"
+                            >
+                              {table.capacity} {table.capacity === 1 ? 'osoba' : table.capacity <= 4 ? 'osobe' : 'osoba'}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Legend - Sidebar */}
+                <div className="lg:w-56 bg-[#0A0A0A] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#D4AF37] font-bold text-base sm:text-lg mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    Legenda
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-[#1A1A1A] border-2.5 border-[#D4AF37] rounded shrink-0 flex items-center justify-center">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="9" stroke="#D4AF37" strokeWidth="2"/>
+                          <path d="M9 12l2 2 4-4" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-sm">Dostupno</p>
+                        <p className="text-gray-400 text-xs">Može se odabrati</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-[#D4AF37] border-2.5 border-white rounded shrink-0 flex items-center justify-center">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <rect x="4" y="4" width="16" height="16" rx="2" fill="#000" stroke="#000" strokeWidth="2"/>
+                          <path d="M8 12h8" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-sm">Odabrano</p>
+                        <p className="text-gray-400 text-xs">Trenutno odabran</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-[#0A0A0A] border-2.5 border-[#555] rounded shrink-0 opacity-40 flex items-center justify-center">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="9" stroke="#555" strokeWidth="2"/>
+                          <path d="M15 9l-6 6M9 9l6 6" stroke="#555" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-gray-300 font-semibold text-sm">Zauzeto / Premalo</p>
+                        <p className="text-gray-500 text-xs">Nije dostupno</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 pt-4 border-t border-[#333]">
+                    <div className="text-xs text-gray-400 space-y-2">
+                      <p className="flex items-center gap-2">
+                        <span className="text-[#D4AF37]">●</span>
+                        <span>Kliknite na dostupan stol</span>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <span className="text-[#22c55e]">●</span>
+                        <span>Zeleni rub pri hover</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && confirmAction && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1A1A1A] rounded-lg border-2 border-red-500 max-w-md w-full p-6"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-red-500">Potvrda akcije</h3>
+                <p className="text-gray-400 text-sm">Ova akcija ne može se poništiti</p>
+              </div>
+            </div>
+
+            <div className="bg-[#0A0A0A] rounded-lg p-4 mb-6 border border-[#333]">
+              <p className="text-white mb-2">
+                {confirmAction.type === 'cancel' ? 'Otkazati' : 'Obrisati'} rezervaciju za:
+              </p>
+              <p className="text-[#D4AF37] font-semibold text-lg">{confirmAction.name}</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmAction(null);
+                }}
+                className="flex-1 px-4 py-3 bg-[#333] text-white hover:bg-[#444] rounded-lg transition-all font-semibold"
+              >
+                Odustani
+              </button>
+              <button
+                onClick={executeConfirmAction}
+                className="flex-1 px-4 py-3 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-all font-semibold"
+              >
+                {confirmAction.type === 'cancel' ? 'Otkaži rezervaciju' : 'Obriši'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Nova Rezervacija Modal */}
+      {showNewReservationModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1A1A1A] rounded-lg border border-[#D4AF37] max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  Nova Rezervacija
+                </h2>
+                <p className="text-gray-400 text-sm">Ručno kreiranje rezervacije za goste koji zovu ili dolaze</p>
+              </div>
+              <button
+                onClick={() => setShowNewReservationModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Ime i prezime */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Ime i prezime <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newReservation.customerName}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only letters (including Croatian), spaces, and hyphens
+                    const filtered = value.replace(/[^a-zA-Z\u010d\u0107\u017e\u0161\u0111\u010c\u0106\u017d\u0160\u0110\s-]/g, '');
+                    const capitalized = capitalizeName(filtered);
+                    setNewReservation({...newReservation, customerName: capitalized});
+                  }}
+                  className="w-full px-4 py-3 bg-[#0A0A0A] border border-[#333] rounded-lg text-white focus:border-[#D4AF37] focus:outline-none"
+                  placeholder="Marko Horvat"
+                />
+              </div>
+
+              {/* Telefon */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Telefon <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={newReservation.customerPhone}
+                  onChange={(e) => {
+                    // Allow only numbers, +, and spaces
+                    const filtered = e.target.value.replace(/[^0-9+\s]/g, '');
+                    setNewReservation({...newReservation, customerPhone: filtered});
+                  }}
+                  className="w-full px-4 py-3 bg-[#0A0A0A] border border-[#333] rounded-lg text-white focus:border-[#D4AF37] focus:outline-none"
+                  placeholder="+385 91 234 5678"
+                />
+              </div>
+
+              {/* Email (opciono) */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Email (opciono)
+                </label>
+                <input
+                  type="email"
+                  value={newReservation.customerEmail}
+                  onChange={(e) => {
+                    const email = e.target.value;
+                    setNewReservation({...newReservation, customerEmail: email});
+                    validateEmail(email);
+                  }}
+                  className={`w-full px-4 py-3 bg-[#0A0A0A] border ${
+                    emailError ? 'border-red-500' : 'border-[#333]'
+                  } rounded-lg text-white focus:border-[#D4AF37] focus:outline-none`}
+                  placeholder="marko@example.com"
+                />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
+              </div>
+
+              {/* Datum */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Datum <span className="text-red-500">*</span>
+                </label>
+                <DatePicker
+                  selected={newReservation.date}
+                  onChange={(date: Date | null) => date && setNewReservation({...newReservation, date})}
+                  minDate={new Date()}
+                  dateFormat="dd.MM.yyyy"
+                  locale={hr}
+                  className="w-full px-4 py-3 bg-[#0A0A0A] border border-[#333] rounded-lg text-white focus:border-[#D4AF37] focus:outline-none"
+                />
+              </div>
+
+              {/* Vrijeme */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Vrijeme <span className="text-red-500">*</span>
+                </label>
+                {checkingAvailability ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-[#D4AF37] border-r-transparent"></div>
+                    <p className="text-gray-400 text-sm mt-2">Provjeravam dostupnost...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-2">
+                    {TIME_SLOTS.map((time) => {
+                      const isAvailable = timeAvailability[time] !== false;
+                      const isDisabled = !isAvailable;
+                      
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => !isDisabled && setNewReservation({...newReservation, time})}
+                          disabled={isDisabled}
+                          className={`py-3 px-2 text-sm font-semibold rounded-lg transition-all relative ${
+                            newReservation.time === time
+                              ? 'bg-[#D4AF37] text-black scale-105'
+                              : isDisabled
+                              ? 'bg-[#1A1A1A]/50 text-gray-600 cursor-not-allowed border border-[#333]/50'
+                              : 'bg-[#0A0A0A] text-gray-300 hover:bg-[#333] hover:text-white border border-[#333] hover:border-[#D4AF37]'
+                          }`}
+                        >
+                          {time}
+                          {isDisabled && (
+                            <span className="absolute top-1 right-1 text-red-500 text-xs">✕</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Broj gostiju */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Broj gostiju <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setNewReservation({...newReservation, numberOfGuests: Math.max(1, newReservation.numberOfGuests - 1)})}
+                    className="w-12 h-12 bg-[#0A0A0A] border border-[#333] hover:border-[#D4AF37] rounded-lg text-white font-bold text-xl transition-all"
+                  >
+                    -
+                  </button>
+                  <span className="text-3xl font-bold text-[#D4AF37] min-w-12 text-center">
+                    {newReservation.numberOfGuests}
+                  </span>
+                  <button
+                    onClick={() => setNewReservation({...newReservation, numberOfGuests: newReservation.numberOfGuests + 1})}
+                    className="w-12 h-12 bg-[#0A0A0A] border border-[#333] hover:border-[#D4AF37] rounded-lg text-white font-bold text-xl transition-all"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Posebni zahtjevi */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Posebni zahtjevi (opciono)
+                </label>
+                <textarea
+                  value={newReservation.specialRequests}
+                  onChange={(e) => setNewReservation({...newReservation, specialRequests: e.target.value})}
+                  className="w-full px-4 py-3 bg-[#0A0A0A] border border-[#333] rounded-lg text-white focus:border-[#D4AF37] focus:outline-none resize-none"
+                  rows={3}
+                  placeholder="Alergije, proslave, posebni zahtjevi..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewReservationModal(false)}
+                disabled={isConfirming}
+                className="flex-1 px-6 py-3 bg-[#333] text-white hover:bg-[#444] rounded-lg transition-all font-semibold uppercase tracking-wider disabled:opacity-50"
+              >
+                Odustani
+              </button>
+              <button
+                onClick={handleCreateReservation}
+                disabled={isConfirming}
+                className="flex-1 px-6 py-3 bg-[#D4AF37] hover:bg-[#C4A137] text-black rounded-lg transition-all font-bold uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isConfirming ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-5 h-5 border-2 border-black border-t-transparent rounded-full"
+                    />
+                    <span>Spremam...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Kreiraj Rezervaciju</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

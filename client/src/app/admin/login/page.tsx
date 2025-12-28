@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState('admin@nokti.com');
+  const [email, setEmail] = useState('admin@yourbusiness.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,39 +19,50 @@ export default function AdminLoginPage() {
 
     try {
       // Simple admin login - in production this should be more secure
-      if (email === 'admin@nokti.com' && password === 'admin123') {
+      if (email === 'admin@yourbusiness.com' && password === 'admin123') {
         localStorage.setItem('adminLoggedIn', 'true');
         router.push('/admin/dashboard');
       } else {
-        setError('Pogrešni podaci za prijavu');
+        setError('Invalid credentials');
       }
-    } catch (err) {
-      setError('Greška prilikom prijave');
+    } catch {
+      setError('Login error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[#0A0A0A]">
       <Navigation />
-      <div className="pt-24 py-12">
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8">
+      <div className="pt-32 pb-12 px-4">
+        <div className="max-w-md mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="glass rounded-lg p-8 shadow-2xl"
+          >
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Admin Prijava</h1>
-              <p className="text-gray-600 dark:text-gray-400">Prijavite se u admin panel</p>
+              <h1 className="text-3xl font-bold text-[#D4AF37] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Admin Prijava
+              </h1>
+              <p className="text-gray-400">Pristup administraciji</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                  <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-red-900/20 border border-red-800 rounded-lg p-4"
+                >
+                  <p className="text-red-400 text-sm text-center">{error}</p>
+                </motion.div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2 uppercase tracking-wider">
                   Email
                 </label>
                 <input
@@ -58,13 +70,13 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
-                  placeholder="admin@nokti.com"
+                  className="w-full px-4 py-3 bg-[#1A1A1A] border-2 border-[#333] rounded-lg focus:border-[#D4AF37] focus:outline-none text-white transition-all"
+                  placeholder="admin@yourbusiness.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2 uppercase tracking-wider">
                   Lozinka
                 </label>
                 <input
@@ -72,7 +84,7 @@ export default function AdminLoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                  className="w-full px-4 py-3 bg-[#1A1A1A] border-2 border-[#333] rounded-lg focus:border-[#D4AF37] focus:outline-none text-white transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -80,16 +92,16 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 transform hover:scale-105 shadow-lg"
+                className="w-full bg-[#D4AF37] hover:bg-[#E8D89F] text-black font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 transform hover:scale-105 shadow-lg uppercase tracking-wider"
               >
-                {loading ? 'Prijavljivanje...' : 'Prijavi se'}
+                {loading ? 'Prijava...' : 'Prijavi se'}
               </button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-              <p>Demo podaci: admin@nokti.com / admin123</p>
+            <div className="mt-6 text-center text-sm text-gray-500">
+              <p>Demo kredencijali: admin@yourbusiness.com / admin123</p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

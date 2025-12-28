@@ -1,90 +1,152 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Menu, Minus, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 export default function Navigation() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { name: 'Početna', href: '/' },
-    { name: 'Galerija', href: '/#gallery' },
-    { name: 'Rezerviraj', href: '/order' },
-    { name: 'O nama', href: '/#about' },
-    { name: 'Kontakt', href: '/#contact' },
-    { name: 'Admin', href: '/admin/login' },
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [mobileMenuOpen]);
+
+  const menuItems = [
+    { href: '/#about', label: 'O Nama' },
+    { href: '/#gallery', label: 'Meni' },
+    { href: '/#chef-special', label: 'Specijaliteti' },
+    { href: '/#contact', label: 'Kontakt' },
+    { href: '/admin/login', label: 'Admin' },
   ];
 
   return (
-    <nav className="fixed top-0 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="flex justify-between items-center h-20">
-          {/* Mobile hamburger - FIXED */}
-          <div className="md:hidden fixed left-4 top-4 z-[100]">
+    <>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out ${
+          scrolled
+            ? 'bg-[#0A0A0A]/95 backdrop-blur-md py-3 md:py-4 shadow-2xl border-b border-[#D4AF37]/20'
+            : 'bg-black/30 backdrop-blur-sm py-4 md:py-6'
+        }`}
+      >
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            {/* Mobile Menu Button - Left on mobile */}
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-2 text-gray-700 dark:text-gray-300 hover:text-yellow-400 dark:hover:text-yellow-400 transition-all duration-300 bg-white dark:bg-gray-900 rounded-lg"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden text-white z-50 p-2 -ml-2 order-first"
+              aria-label="Toggle menu"
             >
-              <Menu className={`w-6 h-6 transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} />
+              {mobileMenuOpen ? (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
-          </div>
 
-          <motion.a
-            href="/"
-            className="flex items-center space-x-2 md:order-1 text-center md:text-left w-full md:w-auto justify-center md:justify-start cursor-pointer hover:opacity-80 transition-opacity duration-300"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Sparkles className="w-8 h-8 text-yellow-400" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">Bliss Nails</span>
-          </motion.a>
+            {/* Logo - Center on mobile, left on desktop */}
+            <Link href="/" className="group z-50 lg:order-first">
+              <span className="text-xl sm:text-2xl font-bold text-[#D4AF37] transition-all duration-300 group-hover:text-[#E8D89F]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                {process.env.NEXT_PUBLIC_BUSINESS_NAME || 'Gourmet'}
+              </span>
+            </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8 order-2">
-            {navItems.map((item, index) => (
-              <motion.a
-                key={item.name}
-                href={item.href}
-                className="text-gray-700 dark:text-gray-300 hover:text-yellow-400 dark:hover:text-yellow-400 transition-colors duration-300 font-medium"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
+            {/* Spacer for mobile to keep logo centered */}
+            <div className="w-10 lg:hidden"></div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center gap-6 xl:gap-8">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm uppercase tracking-wider text-white/90 transition-colors duration-300 hover:text-[#D4AF37]"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <Link
+                href="/reservations"
+                className="ml-2 bg-[#D4AF37] px-5 xl:px-6 py-2 xl:py-2.5 text-sm font-semibold uppercase tracking-wider text-black transition-all duration-300 hover:bg-[#E8D89F] hover:shadow-lg rounded"
               >
-                {item.name}
-              </motion.a>
-            ))}
-          </div>
-
-          <div className="flex items-center space-x-4 order-3">
+                Rezerviraj
+              </Link>
+            </div>
           </div>
         </div>
+      </nav>
 
-        {/* Mobile Navigation */}
-        {isOpen && (
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
           <motion.div
-            className="md:hidden"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 lg:hidden"
           >
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-              {navItems.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-yellow-400 dark:hover:text-yellow-400 transition-colors duration-300 font-medium"
-                  onClick={() => setIsOpen(false)}
+            <div className="absolute inset-0 bg-[#0A0A0A]/98 backdrop-blur-xl" />
+            <motion.div
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="relative h-full flex flex-col items-center justify-center px-4"
+            >
+              <div className="w-full max-w-sm space-y-6">
+                {menuItems.map((item, index) => (
+                  <motion.div
+                    key={item.href}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.1 + index * 0.05 }}
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block text-center text-2xl font-semibold text-white/90 hover:text-[#D4AF37] transition-colors py-3"
+                      style={{ fontFamily: "'Playfair Display', serif" }}
+                    >
+                      {item.label}
+                    </Link>
+                  </motion.div>
+                ))}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="pt-4"
                 >
-                  {item.name}
-                </a>
-              ))}
-            </div>
+                  <Link
+                    href="/reservations"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full bg-[#D4AF37] px-8 py-4 text-center text-lg font-bold uppercase tracking-wider text-black transition-all hover:bg-[#E8D89F] rounded-lg"
+                  >
+                    Rezerviraj Stol
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
-      </div>
-    </nav>
+      </AnimatePresence>
+    </>
   );
 }

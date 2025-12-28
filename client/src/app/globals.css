@@ -1,76 +1,590 @@
 @import "tailwindcss";
 
+/* Premium Restaurant Color Palette - Inspired by high-end establishments */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Core Colors */
+  --background: #0A0A0A;
+  --foreground: #F5F5F0;
+  --gold: #D4AF37;
+  --gold-dark: #B8941F;
+  --gold-light: #E8D89F;
+  --charcoal: #1A1A1A;
+  --charcoal-light: #2D2D2D;
+  --warm-white: #FAF8F3;
+  --cream: #F5F1E8;
+  --card-bg: #141414;
+  --border-color: rgba(212, 175, 55, 0.2);
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #FAF8F3;
+    --foreground: #1A1A1A;
+    --card-bg: #FFFFFF;
+    --border-color: rgba(26, 26, 26, 0.1);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth slide animation for appointments */
-@keyframes slideFromRight {
+/* Typography - Elegant serif for headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Premium gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #D4AF37 0%, #E8D89F 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Sophisticated Animations */
+@keyframes fadeIn {
   from {
-    transform: translateX(100%);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
     opacity: 1;
   }
 }
 
-@keyframes slideToLeft {
+@keyframes fadeInUp {
   from {
-    transform: translateX(0);
-    opacity: 1;
+    opacity: 0;
+    transform: translateY(60px);
   }
   to {
-    transform: translateX(-100%);
-    opacity: 0;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes bounceIn {
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-80px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(80px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
   0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
+    background-position: -200% center;
   }
   100% {
-    transform: scale(1);
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes rotateIn {
+  from {
+    opacity: 0;
+    transform: rotate(-10deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Animation Classes */
+.animate-fadeIn {
+  animation: fadeIn 1.2s ease-out forwards;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.animate-fadeInDown {
+  animation: fadeInDown 1s ease-out forwards;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 1s ease-out forwards;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 1s ease-out forwards;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.8s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-rotateIn {
+  animation: rotateIn 1s ease-out forwards;
+}
+
+/* Premium Card Hover Effects */
+.card-hover {
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.15) 50%,
+    transparent 100%
+  );
+  transition: left 0.7s ease;
+}
+
+.card-hover:hover::before {
+  left: 100%;
+}
+
+.card-hover:hover {
+  transform: translateY(-16px) scale(1.02);
+  box-shadow: 0 30px 60px -15px rgba(212, 175, 55, 0.4);
+}
+
+/* Glass Morphism Effect */
+.glass {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(26, 26, 26, 0.1);
+}
+
+/* Premium Button Effects */
+.btn-premium {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 1;
+}
+
+.btn-premium::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  z-index: -1;
+}
+
+.btn-premium:hover::before {
+  width: 400px;
+  height: 400px;
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(212, 175, 55, 0.3);
+}
+
+/* Text Reveal Animation */
+@keyframes textReveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
     opacity: 1;
   }
 }
 
-.appointment-slide-in {
-  animation: slideFromRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+.text-reveal {
+  animation: textReveal 1.5s cubic-bezier(0.77, 0, 0.175, 1) forwards;
 }
 
-.appointment-slide-out {
-  animation: slideToLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+/* Image Parallax Container */
+.parallax-container {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
-.animate-bounce-in {
-  animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+.parallax-image {
+  transform: scale(1.2);
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.parallax-container:hover .parallax-image {
+  transform: scale(1.25);
+}
+
+/* Premium Divider */
+.divider-gold {
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+  margin: 2rem auto;
+  position: relative;
+}
+
+.divider-gold::before {
+  content: '◆';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #D4AF37;
+  background: var(--background);
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection Color */
+::selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: var(--foreground);
+}
+
+::-moz-selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: var(--foreground);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--charcoal);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-dark);
+}
+
+/* Loading Skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 175, 55, 0.1) 0%,
+    rgba(212, 175, 55, 0.2) 50%,
+    rgba(212, 175, 55, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Focus Styles for Accessibility */
+*:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Container Responsive Padding */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: 1536px;
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
+  
+  body {
+    font-size: 0.95rem;
+  }
+}
+
+/* Responsive Spacing */
+@media (max-width: 768px) {
+  .section-padding {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .section-padding {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-top: 8rem;
+    padding-bottom: 8rem;
+  }
+}
+
+/* Custom Scrollbar - Responsive */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--charcoal);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-dark);
+}
+
+/* Mobile-First Animations */
+@media (max-width: 768px) {
+  .card-hover:hover {
+    transform: translateY(-8px) scale(1.01);
+  }
+  
+  .parallax-image {
+    transform: scale(1.1);
+  }
+  
+  .parallax-container:hover .parallax-image {
+    transform: scale(1.15);
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .card-hover {
+    transform: none;
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .card-hover:active {
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+  }
+  
+  .btn-premium:active {
+    transform: scale(0.98);
+  }
+}
+
+/* High DPI Screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  img {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Print Styles */
+@media print {
+  nav,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
+}
+
+/* DatePicker Availability Indicators */
+.react-datepicker__day--has-availability {
+  position: relative;
+}
+
+.react-datepicker__day--has-availability::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981; /* Green for available */
+}
+
+.react-datepicker__day--no-availability {
+  position: relative;
+  color: #ef4444 !important; /* Red text */
+  text-decoration: line-through;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.react-datepicker__day--no-availability::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ef4444; /* Red for no availability */
+}
+
+.react-datepicker__day--no-availability:hover {
+  background-color: transparent !important;
 }
