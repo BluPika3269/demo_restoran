@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import DatePicker from 'react-datepicker';
@@ -18,7 +18,7 @@ const TIME_SLOTS = [
   '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30'
 ];
 
-export default function ReservationPage() {
+function ReservationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -675,5 +675,13 @@ export default function ReservationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ReservationPage() {
+  return (
+    <Suspense fallback={<div>Učitavanje...</div>}>
+      <ReservationContent />
+    </Suspense>
   );
 }

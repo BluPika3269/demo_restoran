@@ -1,22 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Autentikacija isključena - javni pristup
 export function middleware(request: NextRequest) {
-  const basicAuth = request.headers.get('authorization');
-  const url = request.nextUrl;
-
-  if (basicAuth) {
-    const authValue = basicAuth.split(' ')[1];
-    const [user, pwd] = atob(authValue).split(':');
-
-    if (user === 'demo1' && pwd === 'Salon') {
-      return NextResponse.next();
-    }
-  }
-
-  url.pathname = '/api/auth';
-
-  return NextResponse.rewrite(url);
+  return NextResponse.next();
 }
 
 export const config = {

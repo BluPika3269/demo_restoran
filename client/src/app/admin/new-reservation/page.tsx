@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import DatePicker from 'react-datepicker';
@@ -27,7 +27,7 @@ interface Table {
   shape: string;
 }
 
-export default function NewReservationPage() {
+function NewReservationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
@@ -47,13 +47,7 @@ export default function NewReservationPage() {
   const [reservedTableIds, setReservedTableIds] = useState<number[]>([]);
   const [isConfirming, setIsConfirming] = useState(false);
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    if (!isLoggedIn) {
-      router.push('/admin/login');
-      return;
-    }
-  }, [router]);
+  // Autentikacija isključena - javni pristup
 
   // SWR fetcher function
   const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -700,5 +694,13 @@ export default function NewReservationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewReservationPage() {
+  return (
+    <Suspense fallback={<div>Učitavanje...</div>}>
+      <NewReservationContent />
+    </Suspense>
   );
 }

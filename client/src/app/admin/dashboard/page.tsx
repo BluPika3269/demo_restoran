@@ -106,13 +106,9 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    if (!isLoggedIn) {
-      router.push('/admin/login');
-      return;
-    }
+    // Autentikacija isključena - javni pristup
     fetchReservations();
-  }, [router]);
+  }, []);
 
   // Check availability when date or guests change in new reservation modal
   useEffect(() => {

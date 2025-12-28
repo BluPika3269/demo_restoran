@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Table {
@@ -38,4 +39,49 @@ model Reservation {
   table         Table?   @relation(fields: [tableId], references: [id])
 
   @@map("reservations")
+}
+
+model ServiceCategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  icon        String?
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("service_categories")
+}
+
+model Service {
+  id           Int             @id @default(autoincrement())
+  categoryId   Int
+  name         String
+  description  String?
+  duration     Int             // trajanje u minutama
+  price        Float?
+  available    Boolean         @default(true)
+  category     ServiceCategory @relation(fields: [categoryId], references: [id])
+  appointments Appointment[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("services")
+}
+
+model Appointment {
+  id            Int      @id @default(autoincrement())
+  serviceId     Int
+  date          DateTime
+  time          String
+  customerName  String
+  customerPhone String
+  customerEmail String
+  notes         String?
+  status        String   @default("pending") // pending, confirmed, cancelled
+  service       Service  @relation(fields: [serviceId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("appointments")
 }
